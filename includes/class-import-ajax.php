@@ -66,10 +66,15 @@ class Import_Ajax {
 		$folders = isset( $_POST['folders'] ) ? array_map( 'sanitize_text_field', wp_unslash( (array) $_POST['folders'] ) ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized via array_map.
 
 		$options = array(
-			'background'        => ! empty( $_POST['background'] ),
-			'generate_metadata' => ! isset( $_POST['generate_metadata'] ) || '0' !== (string) wp_unslash( $_POST['generate_metadata'] ), // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+			'background'        => ! empty( $_POST['background'] ) && Features::enabled( 'background' ),
+			'generate_metadata' => true,
 			'chunk_size'        => isset( $_POST['chunk_size'] ) ? absint( $_POST['chunk_size'] ) : Import_Processor::DEFAULT_CHUNK_SIZE,
 		);
+
+		// Deferred thumbnails are Pro-only.
+		if ( Features::enabled( 'defer_thumbnails' ) && isset( $_POST['generate_metadata'] ) && '0' === (string) wp_unslash( $_POST['generate_metadata'] ) ) { // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+			$options['generate_metadata'] = false;
+		}
 
 		$result = $this->processor->create_job( $files, $folders, $options );
 		if ( is_wp_error( $result ) ) {
@@ -138,6 +143,7 @@ class Import_Ajax {
 	 */
 	public function pause_job() {
 		$this->guard();
+		$this->require_pro_feature( 'queue_controls' );
 		$job_id = $this->job_id_from_request();
 		$this->assert_job_access( $job_id );
 		$this->send_result( $this->processor->pause_job( $job_id ) );
@@ -150,6 +156,7 @@ class Import_Ajax {
 	 */
 	public function resume_job() {
 		$this->guard();
+		$this->require_pro_feature( 'queue_controls' );
 		$job_id = $this->job_id_from_request();
 		$this->assert_job_access( $job_id );
 		$this->send_result( $this->processor->resume_job( $job_id ) );
@@ -162,6 +169,7 @@ class Import_Ajax {
 	 */
 	public function cancel_job() {
 		$this->guard();
+		// Cancel remains available in Free so users can stop a stuck import.
 		$job_id = $this->job_id_from_request();
 		$this->assert_job_access( $job_id );
 		$this->send_result( $this->processor->cancel_job( $job_id ) );
@@ -174,9 +182,31 @@ class Import_Ajax {
 	 */
 	public function retry_failed() {
 		$this->guard();
+		$this->require_pro_feature( 'queue_controls' );
 		$job_id = $this->job_id_from_request();
 		$this->assert_job_access( $job_id );
 		$this->send_result( $this->processor->retry_failed( $job_id ) );
+	}
+
+	/**
+	 * Require a Pro feature or return JSON error.
+	 *
+	 * @since 5.3.0
+	 *
+	 * @param string $feature Feature slug.
+	 */
+	protected function require_pro_feature( $feature ) {
+		if ( Features::enabled( $feature ) ) {
+			return;
+		}
+
+		wp_send_json_error(
+			array(
+				'message' => __( 'This feature requires Add From Server Reloaded Pro with a valid license.', 'add-from-server-reloaded' ),
+				'code'    => 'pro_required',
+			),
+			403
+		);
 	}
 
 	/**

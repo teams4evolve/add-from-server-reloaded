@@ -110,6 +110,11 @@ class Import_Cron {
 	 * @since 5.3.0
 	 */
 	public function run() {
+		// Background processing is a Pro-gated capability.
+		if ( class_exists( __NAMESPACE__ . '\\Features' ) && ! Features::enabled( 'background' ) ) {
+			return;
+		}
+
 		$lock_key = 'afsrreloaded_cron_lock';
 		if ( get_transient( $lock_key ) ) {
 			return;

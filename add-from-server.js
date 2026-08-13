@@ -219,8 +219,8 @@ jQuery( document ).ready( function( $ ) {
 		var payload = {
 			files: files,
 			folders: folders,
-			background: $( '#afsrreloaded-background' ).is( ':checked' ) ? 1 : 0,
-			generate_metadata: $( '#afsrreloaded-defer-thumbs' ).is( ':checked' ) ? 0 : 1,
+			background: ( data.features && data.features.background && $( '#afsrreloaded-background' ).is( ':checked' ) ) ? 1 : 0,
+			generate_metadata: ( data.features && data.features.deferThumbnails && $( '#afsrreloaded-defer-thumbs' ).is( ':checked' ) ) ? 0 : 1,
 			chunk_size: data.chunkSize || 5
 		};
 

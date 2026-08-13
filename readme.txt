@@ -37,12 +37,10 @@ With Add From Server Reloaded, you can upload files of any size without changing
 * Configurable Root Directory – Set browsing root from plugin settings.  
 * Show/Hide Hidden Files – Toggle visibility for non-importable files.  
 * Last Modified Column – See when files were last updated.  
-* Batch Import Progress – Real chunked progress for large imports.  
+* Batch Import Progress – Real chunked progress for large imports (timeout-safe).  
 * Keyboard Shortcuts – Ctrl+A to select all, ESC to clear selection.  
 * Import Summary – Consolidated message with links to imported files.  
-* Background Imports – Continue importing via WP-Cron if you leave the page.  
-* Import History – Review past jobs, errors, and retry failed files.  
-* Deferred Thumbnails – Optional faster bulk imports by generating image sizes later.  
+* Pro Upgrade Ready – Unlock background imports, history, pause/resume/retry with Add From Server Reloaded Pro.  
 
 **User Interface**
 
@@ -110,13 +108,10 @@ Absolutely. No server configuration changes are required.
 == Changelog ==
 
 = 5.3.0 – 2026-08-03 =
-* Added: High-reliability bulk import engine with server-side jobs and chunked AJAX processing.
-* Added: Background import continuation via WP-Cron (leave the page safely).
-* Added: Pause, resume, cancel, and retry-failed controls.
-* Added: Import History admin screen with per-job results.
+* Added: Reliable chunked AJAX bulk import engine (fixes timeouts on large imports).
 * Added: Chunked folder scanning for large directories.
-* Added: Optional deferred thumbnail generation for faster bulk imports.
-* Fixed: Large imports no longer rely on a single long-running form POST (timeouts / stuck imports).
+* Added: Cancel control during imports.
+* Added: Pro extension hooks for background jobs, history, queue controls, and deferred thumbnails.
 
 = 5.2.1 – 2026-07-09 =
 * Fixed: Resolved "Unable to determine root directory" error on hosts where 

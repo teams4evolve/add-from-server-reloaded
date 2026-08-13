@@ -108,13 +108,18 @@ class Plugin {
 
 		$this->import_processor = new Import_Processor( $this );
 		new Import_Ajax( $this->import_processor );
+
+		// Always register Cron/History classes; they respect Features::* at runtime.
+		// Pro registers feature filters on plugins_loaded:20, before admin_menu/init usage.
 		new Import_Cron( $this->import_processor );
 
 		\add_action(
 			'init',
 			static function () {
 				Installer::maybe_upgrade();
-				Import_Cron::ensure_scheduled();
+				if ( Features::enabled( 'background' ) ) {
+					Import_Cron::ensure_scheduled();
+				}
 			},
 			20
 		);
@@ -180,7 +185,9 @@ class Plugin {
 				'ajaxurl'            => \admin_url( 'admin-ajax.php' ),
 				'nonce'              => \wp_create_nonce( 'afsrreloaded_import' ),
 				'historyUrl'         => \admin_url( 'admin.php?page=add-from-server-reloaded-history' ),
+				'proUrl'             => 'https://elearningevolve.com/products/add-from-server-reloaded-pro/',
 				'chunkSize'          => (int) apply_filters( 'afsrreloaded_import_chunk_size', Import_Processor::DEFAULT_CHUNK_SIZE ),
+				'features'           => Features::js_flags(),
 				'processing'         => __( 'Processing...', 'add-from-server-reloaded' ),
 				'scanning'           => __( 'Scanning folders...', 'add-from-server-reloaded' ),
 				'importing'          => __( 'Importing files...', 'add-from-server-reloaded' ),
@@ -1475,22 +1482,32 @@ class Plugin {
 					<button type="button" class="button" id="afsrreloaded-toggle-hidden" style="margin-left: 10px;">
 						<?php esc_html_e( 'Show Hidden Files', 'add-from-server-reloaded' ); ?>
 					</button>
+					<?php if ( Features::enabled( 'history' ) ) : ?>
 					<a class="button" href="<?php echo esc_url( admin_url( 'admin.php?page=add-from-server-reloaded-history' ) ); ?>" style="margin-left: 10px;">
 						<?php esc_html_e( 'Import History', 'add-from-server-reloaded' ); ?>
 					</a>
+					<?php else : ?>
+					<a class="button" href="https://elearningevolve.com/products/add-from-server-reloaded-pro/" target="_blank" rel="noopener noreferrer" style="margin-left: 10px;">
+						<?php esc_html_e( 'Get Pro', 'add-from-server-reloaded' ); ?>
+					</a>
+					<?php endif; ?>
 					<span class="afsrreloaded-import-status" style="margin-left: 15px;"></span>
 					<span class="afsrreloaded-file-count" style="margin-left: 15px; color: #666;"></span>
 				</div>
 
 				<div class="afsrreloaded-import-options" style="margin-bottom: 15px;">
+					<?php if ( Features::enabled( 'background' ) ) : ?>
 					<label style="margin-right: 18px;">
 						<input type="checkbox" name="afsrreloaded_background" id="afsrreloaded-background" value="1" checked="checked" />
 						<?php esc_html_e( 'Continue in background if I leave this page', 'add-from-server-reloaded' ); ?>
 					</label>
+					<?php endif; ?>
+					<?php if ( Features::enabled( 'defer_thumbnails' ) ) : ?>
 					<label style="margin-right: 18px;">
 						<input type="checkbox" name="afsrreloaded_defer_thumbs" id="afsrreloaded-defer-thumbs" value="1" />
 						<?php esc_html_e( 'Defer thumbnail generation (faster bulk imports)', 'add-from-server-reloaded' ); ?>
 					</label>
+					<?php endif; ?>
 				</div>
 
 				<div id="afsrreloaded-progress-panel" class="afsrreloaded-progress-panel" hidden>
@@ -1509,11 +1526,17 @@ class Plugin {
 						<li data-count="skipped"><span>0</span> <?php esc_html_e( 'Skipped', 'add-from-server-reloaded' ); ?></li>
 					</ul>
 					<div class="afsrreloaded-progress-actions">
+						<?php if ( Features::enabled( 'queue_controls' ) ) : ?>
 						<button type="button" class="button" id="afsrreloaded-pause-job"><?php esc_html_e( 'Pause', 'add-from-server-reloaded' ); ?></button>
 						<button type="button" class="button" id="afsrreloaded-resume-job" hidden><?php esc_html_e( 'Resume', 'add-from-server-reloaded' ); ?></button>
+						<?php endif; ?>
 						<button type="button" class="button" id="afsrreloaded-cancel-job"><?php esc_html_e( 'Cancel', 'add-from-server-reloaded' ); ?></button>
+						<?php if ( Features::enabled( 'queue_controls' ) ) : ?>
 						<button type="button" class="button" id="afsrreloaded-retry-failed" hidden><?php esc_html_e( 'Retry failed', 'add-from-server-reloaded' ); ?></button>
+						<?php endif; ?>
+						<?php if ( Features::enabled( 'history' ) ) : ?>
 						<a class="button button-link" id="afsrreloaded-view-history" href="<?php echo esc_url( admin_url( 'admin.php?page=add-from-server-reloaded-history' ) ); ?>"><?php esc_html_e( 'View import history', 'add-from-server-reloaded' ); ?></a>
+						<?php endif; ?>
 					</div>
 					<div class="afsrreloaded-progress-log" aria-live="polite"></div>
 				</div>

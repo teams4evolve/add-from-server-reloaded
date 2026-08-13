@@ -45,8 +45,11 @@ class Installer {
 		self::create_tables();
 		update_option( self::DB_VERSION_OPTION, self::DB_VERSION );
 
-		if ( ! wp_next_scheduled( Import_Cron::HOOK ) ) {
-			wp_schedule_event( time() + MINUTE_IN_SECONDS, 'afsrreloaded_every_minute', Import_Cron::HOOK );
+		// Recurring cron is only needed when Pro background imports are available.
+		if ( class_exists( __NAMESPACE__ . '\\Features' ) && Features::enabled( 'background' ) ) {
+			if ( ! wp_next_scheduled( Import_Cron::HOOK ) ) {
+				wp_schedule_event( time() + MINUTE_IN_SECONDS, 'afsrreloaded_every_minute', Import_Cron::HOOK );
+			}
 		}
 	}
 

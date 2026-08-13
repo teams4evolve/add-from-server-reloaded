@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Add From Server Reloaded
  * Plugin URI:        https://wordpress.org/plugins/add-from-server-reloaded/
- * Description:       Bypass WordPress upload limit. Import large files from your server to Media Library. No PHP configuration needed. Batch import supported.
+ * Description:       Bypass WordPress upload limit. Import large files from your server to Media Library with reliable chunked imports. Pair with Add From Server Reloaded Pro for background jobs and advanced queue tools.
  * Version:           5.3.0
  * Author:            eLearning evolve
  * Author URI:        https://elearningevolve.com/about/
@@ -46,6 +46,7 @@ spl_autoload_register(
 		$relative = strtolower( str_replace( array( 'AFSRReloaded\\', '_' ), array( '', '-' ), $class ) );
 		$map      = array(
 			'plugin'                => 'class.add-from-server.php',
+			'features'              => 'includes/class-features.php',
 			'installer'             => 'includes/class-installer.php',
 			'import-job-repository' => 'includes/class-import-job-repository.php',
 			'import-processor'      => 'includes/class-import-processor.php',

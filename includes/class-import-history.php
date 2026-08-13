@@ -47,6 +47,10 @@ class Import_History {
 	 * @since 5.3.0
 	 */
 	public function register_menu() {
+		if ( class_exists( __NAMESPACE__ . '\\Features' ) && ! Features::enabled( 'history' ) ) {
+			return;
+		}
+
 		$hook = add_submenu_page(
 			'add-from-server-reloaded',
 			__( 'Import History', 'add-from-server-reloaded' ),
