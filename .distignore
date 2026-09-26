@@ -1,0 +1,38 @@
+# Files/folders excluded from wordpress.org release zips
+# (wp dist-archive / bin/build-org-zip.sh). Keep in git; do not ship.
+
+# VCS / IDE
+.git
+.gitignore
+.gitattributes
+.github
+.idea
+.vscode
+*.swp
+*.swo
+
+# Dev tooling
+.distignore
+.editorconfig
+.phpcs.cache
+.phpunit.result.cache
+phpcs.xml.dist
+phpunit.xml.dist
+composer.json
+composer.lock
+vendor/
+node_modules/
+bin/
+tests/
+.phpunit.cache
+
+# Internal / non-.org docs
+PROJECT-STATUS.md
+README.md
+CHANGELOG.md
+
+# Build / OS junk
+*.zip
+*.tar.gz
+.DS_Store
+Thumbs.db

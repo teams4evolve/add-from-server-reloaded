@@ -88,14 +88,22 @@ class Import_Processor {
 			return new WP_Error( 'no_selection', __( 'Please select at least one file or folder to import.', 'add-from-server-reloaded' ) );
 		}
 
-		$defaults = array(
+		$defaults              = array(
 			'mode'               => 'ajax',
 			'generate_metadata'  => true,
 			'chunk_size'         => self::DEFAULT_CHUNK_SIZE,
 			'background'         => false,
+			'preserve_structure' => false,
+			'duplicate_action'   => 'skip',
+			'file_types'         => 'all',
+			'allowed_exts'       => '',
+			'max_file_size_mb'   => 0,
+			'min_mtime'          => 0,
 		);
-		$options  = wp_parse_args( $options, $defaults );
+		$options               = wp_parse_args( $options, $defaults );
 		$options['chunk_size'] = max( 1, min( 25, absint( $options['chunk_size'] ) ) );
+		// Freeze the browse root for this job so background/cron use the same jail.
+		$options['root'] = wp_normalize_path( untrailingslashit( $root ) );
 
 		/**
 		 * Filters import job options before creation.
@@ -108,9 +116,9 @@ class Import_Processor {
 		 */
 		$options = apply_filters( 'afsrreloaded_import_job_options', $options, $files, $folders );
 
-		$validated_files   = array();
-		$skipped_selected  = array();
-		$scan_queue        = array();
+		$validated_files  = array();
+		$skipped_selected = array();
+		$scan_queue       = array();
 
 		foreach ( $files as $relative ) {
 			$absolute = $this->resolve_path( $root, $relative );
@@ -151,7 +159,7 @@ class Import_Processor {
 			);
 		}
 
-		$mode = ! empty( $options['background'] ) ? 'background' : 'ajax';
+		$mode   = ! empty( $options['background'] ) ? 'background' : 'ajax';
 		$status = ! empty( $scan_queue ) ? 'scanning' : 'pending';
 
 		$options['initial_skipped'] = $skipped_selected;
@@ -186,6 +194,7 @@ class Import_Processor {
 		}
 
 		if ( 'background' === $mode ) {
+			Import_Cron::ensure_scheduled();
 			Import_Cron::schedule_soon();
 		}
 
@@ -221,7 +230,7 @@ class Import_Processor {
 			return $this->status_payload( $job );
 		}
 
-		$root = $this->plugin->get_root();
+		$root = $this->job_root( $job );
 		if ( ! $root ) {
 			return new WP_Error( 'no_root', __( 'Unable to determine root directory.', 'add-from-server-reloaded' ) );
 		}
@@ -237,6 +246,14 @@ class Import_Processor {
 		$blocked    = 0;
 
 		while ( ! empty( $queue ) && $inspected < $scan_limit && ( microtime( true ) - $started ) < $budget ) {
+			// Stop promptly if the user paused/cancelled mid-scan.
+			$live = Import_Job_Repository::get_job( $job_id );
+			if ( $live && in_array( $live->status, array( 'paused', 'cancelled' ), true ) ) {
+				$payload                  = $this->status_payload( $live );
+				$payload['scan_complete'] = false;
+				return $payload;
+			}
+
 			$current    = array_shift( $queue );
 			$folder_rel = isset( $current['path'] ) ? (string) $current['path'] : '';
 			$offset     = isset( $current['offset'] ) ? absint( $current['offset'] ) : 0;
@@ -275,7 +292,10 @@ class Import_Processor {
 					continue;
 				}
 
-				$relative = ltrim( str_replace( $root, '', $entry ), '/' );
+				$relative = Path_Guard::absolute_to_relative( $entry, $root );
+				if ( false === $relative ) {
+					continue;
+				}
 
 				if ( is_dir( $entry ) ) {
 					$queue[] = array(
@@ -294,12 +314,17 @@ class Import_Processor {
 					continue;
 				}
 
+				if ( ! File_Filters::passes( $entry, is_array( $job->options ) ? $job->options : array() ) ) {
+					++$blocked;
+					continue;
+				}
+
 				$found[] = $relative;
 			}
 		}
 
 		// Deduplicate within this chunk before insert.
-		$found = array_values( array_unique( $found ) );
+		$found    = array_values( array_unique( $found ) );
 		$inserted = 0;
 		if ( ! empty( $found ) ) {
 			$inserted = Import_Job_Repository::insert_items( $job_id, $found );
@@ -311,6 +336,16 @@ class Import_Processor {
 		);
 		Import_Job_Repository::increment_counters( $job_id, $deltas );
 
+		// Do not overwrite a concurrent pause/cancel.
+		$fresh = Import_Job_Repository::get_job( $job_id );
+		if ( $fresh && in_array( $fresh->status, array( 'paused', 'cancelled' ), true ) ) {
+			$payload                       = $this->status_payload( $fresh );
+			$payload['scan_complete']      = empty( $fresh->scan_queue );
+			$payload['scanned_this_chunk'] = $inserted;
+			$payload['blocked_this_chunk'] = $blocked;
+			return $payload;
+		}
+
 		$update = array(
 			'scan_queue' => $queue,
 		);
@@ -321,11 +356,15 @@ class Import_Processor {
 
 		Import_Job_Repository::update_job( $job_id, $update );
 
-		$job = Import_Job_Repository::get_job( $job_id );
-		$payload = $this->status_payload( $job );
-		$payload['scan_complete'] = empty( $job->scan_queue );
+		$job                           = Import_Job_Repository::get_job( $job_id );
+		$payload                       = $this->status_payload( $job );
+		$payload['scan_complete']      = empty( $job->scan_queue );
 		$payload['scanned_this_chunk'] = $inserted;
 		$payload['blocked_this_chunk'] = $blocked;
+
+		if ( $job && 'background' === $job->mode && empty( $job->scan_queue ) && in_array( $job->status, array( 'pending', 'running' ), true ) ) {
+			Import_Cron::schedule_soon();
+		}
 
 		return $payload;
 	}
@@ -352,7 +391,7 @@ class Import_Processor {
 			return new WP_Error( 'still_scanning', __( 'Folder scan is not finished yet.', 'add-from-server-reloaded' ) );
 		}
 
-		$root = $this->plugin->get_root();
+		$root = $this->job_root( $job );
 		if ( ! $root ) {
 			return new WP_Error( 'no_root', __( 'Unable to determine root directory.', 'add-from-server-reloaded' ) );
 		}
@@ -363,6 +402,10 @@ class Import_Processor {
 		$chunk_size = max( 1, min( 25, (int) apply_filters( 'afsrreloaded_import_chunk_size', $chunk_size, $job ) ) );
 		$budget     = (int) apply_filters( 'afsrreloaded_import_time_budget', self::DEFAULT_TIME_BUDGET, $job );
 		$generate   = ! isset( $job->options['generate_metadata'] ) || ! empty( $job->options['generate_metadata'] );
+		$preserve   = ! empty( $job->options['preserve_structure'] ) && Features::enabled( 'folder_preserve' );
+		$dup_action = Features::enabled( 'advanced_duplicates' )
+			? sanitize_key( $job->options['duplicate_action'] ?? Duplicate_Manager::default_action() )
+			: 'skip';
 
 		$items   = Import_Job_Repository::get_pending_items( $job_id, $chunk_size );
 		$started = microtime( true );
@@ -406,7 +449,10 @@ class Import_Processor {
 			$id = $this->plugin->handle_import_file(
 				$absolute,
 				array(
-					'generate_metadata' => $generate,
+					'generate_metadata'  => $generate,
+					'source_relative'    => $path_rel,
+					'preserve_structure' => $preserve,
+					'duplicate_action'   => $dup_action,
 				)
 			);
 
@@ -466,14 +512,22 @@ class Import_Processor {
 
 		Import_Job_Repository::increment_counters( $job_id, $counters );
 
-		$job = Import_Job_Repository::get_job( $job_id );
+		// A concurrent pause/cancel must win over this chunk's status writes.
+		$fresh = Import_Job_Repository::get_job( $job_id );
+		if ( $fresh && in_array( $fresh->status, array( 'paused', 'cancelled' ), true ) ) {
+			$payload                  = $this->status_payload( $fresh );
+			$payload['chunk_results'] = $results;
+			return $payload;
+		}
+
+		$job = $fresh ? $fresh : Import_Job_Repository::get_job( $job_id );
 		$this->maybe_complete_job( $job );
 
-		$job = Import_Job_Repository::get_job( $job_id );
-		$payload = $this->status_payload( $job );
+		$job                      = Import_Job_Repository::get_job( $job_id );
+		$payload                  = $this->status_payload( $job );
 		$payload['chunk_results'] = $results;
 
-		if ( 'background' === $job->mode && in_array( $job->status, array( 'running', 'pending' ), true ) ) {
+		if ( $job && 'background' === $job->mode && in_array( $job->status, array( 'running', 'pending' ), true ) ) {
 			Import_Cron::schedule_soon();
 		}
 
@@ -520,7 +574,7 @@ class Import_Processor {
 			return $this->status_payload( $job );
 		}
 
-		$next = ! empty( $job->scan_queue ) ? 'scanning' : 'pending';
+		$next = ! empty( $job->scan_queue ) ? 'scanning' : 'running';
 		Import_Job_Repository::update_job(
 			$job_id,
 			array(
@@ -628,23 +682,23 @@ class Import_Processor {
 		}
 
 		return array(
-			'job_id'          => (int) $job->id,
-			'status'          => $job->status,
-			'mode'            => $job->mode,
-			'total'           => $total,
-			'processed'       => $processed,
-			'imported'        => (int) $job->imported,
-			'duplicates'      => (int) $job->duplicates,
-			'errors'          => (int) $job->errors,
-			'skipped'         => (int) $job->skipped,
-			'percent'         => $percent,
-			'scan_remaining'  => is_array( $job->scan_queue ) ? count( $job->scan_queue ) : 0,
-			'scan_complete'   => empty( $job->scan_queue ) && 'scanning' !== $job->status,
-			'is_complete'     => in_array( $job->status, array( 'completed', 'cancelled', 'failed' ), true ),
-			'recent'          => $recent,
-			'created_at'      => $job->created_at,
-			'updated_at'      => $job->updated_at,
-			'completed_at'    => $job->completed_at,
+			'job_id'         => (int) $job->id,
+			'status'         => $job->status,
+			'mode'           => $job->mode,
+			'total'          => $total,
+			'processed'      => $processed,
+			'imported'       => (int) $job->imported,
+			'duplicates'     => (int) $job->duplicates,
+			'errors'         => (int) $job->errors,
+			'skipped'        => (int) $job->skipped,
+			'percent'        => $percent,
+			'scan_remaining' => is_array( $job->scan_queue ) ? count( $job->scan_queue ) : 0,
+			'scan_complete'  => empty( $job->scan_queue ) && 'scanning' !== $job->status,
+			'is_complete'    => in_array( $job->status, array( 'completed', 'cancelled', 'failed' ), true ),
+			'recent'         => $recent,
+			'created_at'     => $job->created_at,
+			'updated_at'     => $job->updated_at,
+			'completed_at'   => $job->completed_at,
 		);
 	}
 
@@ -656,7 +710,7 @@ class Import_Processor {
 	 * @param object $job Job object.
 	 */
 	protected function maybe_complete_job( $job ) {
-		if ( in_array( $job->status, array( 'cancelled', 'paused', 'failed' ), true ) ) {
+		if ( ! $job || in_array( $job->status, array( 'cancelled', 'paused', 'failed', 'completed' ), true ) ) {
 			return;
 		}
 
@@ -666,7 +720,11 @@ class Import_Processor {
 
 		$pending = Import_Job_Repository::get_pending_items( $job->id, 1 );
 		if ( ! empty( $pending ) ) {
-			Import_Job_Repository::update_job( $job->id, array( 'status' => 'pending' ) );
+			// Keep "running" while work remains so the UI / cron do not treat the
+			// job as idle "pending" between chunks (looks stuck; pause races).
+			if ( 'running' !== $job->status ) {
+				Import_Job_Repository::update_job( $job->id, array( 'status' => 'running' ) );
+			}
 			return;
 		}
 
@@ -689,6 +747,25 @@ class Import_Processor {
 	}
 
 	/**
+	 * Root directory frozen on the job (falls back to current plugin root).
+	 *
+	 * @since 5.3.0
+	 *
+	 * @param object $job Job row.
+	 * @return string|false
+	 */
+	protected function job_root( $job ) {
+		if ( $job && ! empty( $job->options['root'] ) && is_string( $job->options['root'] ) ) {
+			$stored = wp_normalize_path( untrailingslashit( $job->options['root'] ) );
+			if ( Path_Guard::is_path_allowed( $stored ) && is_dir( $stored ) && is_readable( $stored ) ) {
+				return $stored;
+			}
+		}
+
+		return $this->plugin->get_root();
+	}
+
+	/**
 	 * Resolve and validate a relative path against the root.
 	 *
 	 * @since 5.3.0
@@ -698,11 +775,23 @@ class Import_Processor {
 	 * @return string|WP_Error Absolute real path or error.
 	 */
 	protected function resolve_path( $root, $relative ) {
-		$relative = ltrim( (string) $relative, '/' );
+		$relative  = ltrim( (string) $relative, '/' );
+		$root_real = realpath( $root );
+		if ( $root_real ) {
+			$root = $root_real;
+		}
 		$candidate = trailingslashit( $root ) . $relative;
-		$realpath  = realpath( $candidate );
 
-		if ( ! $realpath || ! str_starts_with( $realpath, $root ) ) {
+		if ( ! file_exists( $candidate ) ) {
+			return new WP_Error(
+				'missing_file',
+				__( 'File not found under the import root. It may have been moved or the path is stale.', 'add-from-server-reloaded' )
+			);
+		}
+
+		$realpath = realpath( $candidate );
+
+		if ( ! $realpath || ! Path_Guard::path_has_root_boundary( $realpath, $root ) ) {
 			return new WP_Error(
 				'security_path',
 				__( 'Security error: file is outside the allowed directory.', 'add-from-server-reloaded' )
@@ -710,6 +799,20 @@ class Import_Processor {
 		}
 
 		return $realpath;
+	}
+
+	/**
+	 * Whether a scanned file passes job filter options.
+	 *
+	 * @since 5.4.0
+	 * @deprecated 5.4.0 Use File_Filters::passes().
+	 *
+	 * @param string $absolute Absolute path.
+	 * @param array  $options  Job options.
+	 * @return bool
+	 */
+	protected function file_passes_filters( $absolute, array $options ) {
+		return File_Filters::passes( $absolute, $options );
 	}
 
 	/**

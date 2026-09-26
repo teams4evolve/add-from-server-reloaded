@@ -71,11 +71,20 @@ class Features {
 	 */
 	public static function js_flags() {
 		return array(
-			'isPro'            => self::is_pro(),
-			'background'       => self::enabled( 'background' ),
-			'history'          => self::enabled( 'history' ),
-			'queueControls'    => self::enabled( 'queue_controls' ),
-			'deferThumbnails'  => self::enabled( 'defer_thumbnails' ),
+			'isPro'              => self::is_pro(),
+			'background'         => self::enabled( 'background' ),
+			'history'            => self::enabled( 'history' ),
+			'queueControls'      => self::enabled( 'queue_controls' ),
+			'deferThumbnails'    => self::enabled( 'defer_thumbnails' ),
+			'scheduledImports'   => self::enabled( 'scheduled_imports' ),
+			'folderPreserve'     => self::enabled( 'folder_preserve' ),
+			'advancedDuplicates' => self::enabled( 'advanced_duplicates' ),
+			'ftpSftp'            => self::enabled( 'ftp_sftp' ),
+			'cloudStorage'       => self::enabled( 'cloud_storage' ),
+			'rbac'               => self::enabled( 'rbac' ),
+			'restApi'            => self::enabled( 'rest_api' ),
+			'wpCli'              => self::enabled( 'wp_cli' ),
+			'emailNotifications' => self::enabled( 'email_notifications' ),
 		);
 	}
 }

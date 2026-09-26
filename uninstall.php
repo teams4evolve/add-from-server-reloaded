@@ -24,6 +24,10 @@ function afsrreloaded_delete_plugin_options() {
 	delete_option( 'afsrreloaded_root_directory' );
 	delete_option( 'afsrreloaded_db_version' );
 	delete_option( 'frmsvr_root' );
+	// Legacy Multisite network setting (feature removed).
+	if ( function_exists( 'delete_site_option' ) ) {
+		delete_site_option( 'afsrreloaded_network_settings' );
+	}
 }
 
 /**

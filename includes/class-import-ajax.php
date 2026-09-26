@@ -47,6 +47,7 @@ class Import_Ajax {
 			'afsrreloaded_resume_job'   => 'resume_job',
 			'afsrreloaded_cancel_job'   => 'cancel_job',
 			'afsrreloaded_retry_failed' => 'retry_failed',
+			'afsrreloaded_kick_cron'    => 'kick_cron',
 		);
 
 		foreach ( $actions as $hook => $method ) {
@@ -62,6 +63,7 @@ class Import_Ajax {
 	public function create_job() {
 		$this->guard();
 
+		// phpcs:disable WordPress.Security.NonceVerification.Missing -- verified in guard().
 		$files   = isset( $_POST['files'] ) ? array_map( 'sanitize_text_field', wp_unslash( (array) $_POST['files'] ) ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized via array_map.
 		$folders = isset( $_POST['folders'] ) ? array_map( 'sanitize_text_field', wp_unslash( (array) $_POST['folders'] ) ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized via array_map.
 
@@ -75,6 +77,18 @@ class Import_Ajax {
 		if ( Features::enabled( 'defer_thumbnails' ) && isset( $_POST['generate_metadata'] ) && '0' === (string) wp_unslash( $_POST['generate_metadata'] ) ) { // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 			$options['generate_metadata'] = false;
 		}
+
+		if ( Features::enabled( 'folder_preserve' ) && isset( $_POST['preserve_structure'] ) && '1' === (string) wp_unslash( $_POST['preserve_structure'] ) ) { // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+			$options['preserve_structure'] = true;
+		}
+
+		if ( Features::enabled( 'advanced_duplicates' ) && isset( $_POST['duplicate_action'] ) ) {
+			$action = sanitize_key( wp_unslash( $_POST['duplicate_action'] ) ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+			if ( in_array( $action, array( 'skip', 'replace', 'rename' ), true ) ) {
+				$options['duplicate_action'] = $action;
+			}
+		}
+		// phpcs:enable WordPress.Security.NonceVerification.Missing
 
 		$result = $this->processor->create_job( $files, $folders, $options );
 		if ( is_wp_error( $result ) ) {
@@ -189,6 +203,27 @@ class Import_Ajax {
 	}
 
 	/**
+	 * Nudge background cron (used when leaving the page with Continue in background).
+	 *
+	 * @since 5.4.1
+	 */
+	public function kick_cron() {
+		$this->guard();
+
+		if ( ! Features::enabled( 'background' ) ) {
+			wp_send_json_success( array( 'scheduled' => false ) );
+		}
+
+		Import_Cron::ensure_scheduled();
+		Import_Cron::schedule_soon();
+
+		// Process one tick immediately so jobs do not sit in "pending" waiting for wp-cron.
+		Import_Cron::process_now( $this->processor );
+
+		wp_send_json_success( array( 'scheduled' => true ) );
+	}
+
+	/**
 	 * Require a Pro feature or return JSON error.
 	 *
 	 * @since 5.3.0
@@ -217,7 +252,7 @@ class Import_Ajax {
 	protected function guard() {
 		check_ajax_referer( 'afsrreloaded_import', 'nonce' );
 
-		if ( ! current_user_can( 'upload_files' ) ) {
+		if ( ! Capabilities::can_import() ) {
 			wp_send_json_error(
 				array( 'message' => __( 'You do not have permission to upload files.', 'add-from-server-reloaded' ) ),
 				403
@@ -249,7 +284,7 @@ class Import_Ajax {
 			wp_send_json_error( array( 'message' => __( 'Import job not found.', 'add-from-server-reloaded' ) ), 404 );
 		}
 
-		if ( (int) $job->user_id !== get_current_user_id() && ! current_user_can( 'manage_options' ) ) {
+		if ( get_current_user_id() !== (int) $job->user_id && ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( array( 'message' => __( 'You cannot manage this import job.', 'add-from-server-reloaded' ) ), 403 );
 		}
 	}

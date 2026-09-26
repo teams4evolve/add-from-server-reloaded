@@ -57,6 +57,7 @@ class Import_Cron {
 		add_filter( 'cron_schedules', array( $this, 'register_schedule' ) );
 		add_action( self::HOOK, array( $this, 'run' ) );
 		add_action( self::HOOK_SOON, array( $this, 'run' ) );
+		add_action( 'admin_init', array( __CLASS__, 'maybe_nudge_from_admin' ), 40 );
 	}
 
 	/**
@@ -96,12 +97,57 @@ class Import_Cron {
 	 * @since 5.3.0
 	 */
 	public static function schedule_soon() {
-		if ( ! wp_next_scheduled( self::HOOK_SOON ) ) {
-			wp_schedule_single_event( time() + 5, self::HOOK_SOON );
+		// Always (re)schedule a near-term tick so leaving the page does not leave
+		// jobs waiting on a missed single event.
+		$next = wp_next_scheduled( self::HOOK_SOON );
+		if ( $next && $next > time() + 30 ) {
+			wp_unschedule_event( $next, self::HOOK_SOON );
+			$next = false;
+		}
+		if ( ! $next ) {
+			wp_schedule_single_event( time() + 1, self::HOOK_SOON );
 		}
 
-		// Nudge WP-Cron on hosts where visits are sparse.
-		spawn_cron();
+		self::ensure_scheduled();
+		spawn_cron( time() );
+	}
+
+	/**
+	 * On admin page loads, keep background jobs moving without a manual "Continue" click.
+	 *
+	 * @since 5.4.2
+	 */
+	public static function maybe_nudge_from_admin() {
+		if ( ! is_admin() || wp_doing_ajax() || wp_doing_cron() ) {
+			return;
+		}
+		if ( class_exists( __NAMESPACE__ . '\\Features' ) && ! Features::enabled( 'background' ) ) {
+			return;
+		}
+		if ( ! class_exists( __NAMESPACE__ . '\\Import_Job_Repository' ) ) {
+			return;
+		}
+
+		$jobs = Import_Job_Repository::get_runnable_jobs( 1 );
+		if ( empty( $jobs ) ) {
+			return;
+		}
+
+		self::ensure_scheduled();
+		self::schedule_soon();
+
+		// Process one tick after the response is sent so admin pages stay snappy.
+		add_action(
+			'shutdown',
+			static function () {
+				$plugin = Plugin::instance();
+				$proc   = $plugin->get_import_processor();
+				if ( $proc ) {
+					self::process_now( $proc );
+				}
+			},
+			5
+		);
 	}
 
 	/**
@@ -110,6 +156,17 @@ class Import_Cron {
 	 * @since 5.3.0
 	 */
 	public function run() {
+		self::process_now( $this->processor );
+	}
+
+	/**
+	 * Process runnable jobs immediately (used by cron + AJAX kick).
+	 *
+	 * @since 5.4.1
+	 *
+	 * @param Import_Processor $processor Processor.
+	 */
+	public static function process_now( Import_Processor $processor ) {
 		// Background processing is a Pro-gated capability.
 		if ( class_exists( __NAMESPACE__ . '\\Features' ) && ! Features::enabled( 'background' ) ) {
 			return;
@@ -117,6 +174,8 @@ class Import_Cron {
 
 		$lock_key = 'afsrreloaded_cron_lock';
 		if ( get_transient( $lock_key ) ) {
+			// Another worker is busy — ensure a follow-up tick is scheduled.
+			self::schedule_soon();
 			return;
 		}
 
@@ -136,7 +195,7 @@ class Import_Cron {
 				}
 
 				if ( ! empty( $job->scan_queue ) || 'scanning' === $job->status ) {
-					$this->processor->scan_chunk( $job->id );
+					$processor->scan_chunk( $job->id );
 					$job = Import_Job_Repository::get_job( $job->id );
 				}
 
@@ -144,7 +203,7 @@ class Import_Cron {
 					// Multiple chunks per cron tick for better throughput.
 					$max_chunks = (int) apply_filters( 'afsrreloaded_cron_chunks_per_run', 3, $job );
 					for ( $i = 0; $i < $max_chunks; $i++ ) {
-						$result = $this->processor->process_chunk( $job->id );
+						$result = $processor->process_chunk( $job->id );
 						if ( is_wp_error( $result ) || ! empty( $result['is_complete'] ) || 'paused' === $result['status'] ) {
 							break;
 						}
@@ -153,7 +212,7 @@ class Import_Cron {
 			}
 
 			// Process deferred attachment metadata.
-			$this->process_deferred_metadata();
+			self::process_deferred_metadata_batch();
 		} finally {
 			delete_transient( $lock_key );
 		}
@@ -171,6 +230,15 @@ class Import_Cron {
 	 * @since 5.3.0
 	 */
 	protected function process_deferred_metadata() {
+		self::process_deferred_metadata_batch();
+	}
+
+	/**
+	 * Generate deferred attachment metadata in small batches (static).
+	 *
+	 * @since 5.4.1
+	 */
+	protected static function process_deferred_metadata_batch() {
 		$query = new \WP_Query(
 			array(
 				'post_type'      => 'attachment',

@@ -50,9 +50,11 @@ class Import_Job_Repository {
 	 * @since 5.3.0
 	 *
 	 * @param array $args {
-	 *     @type int    $user_id
-	 *     @type string $mode     ajax|background
-	 *     @type array  $options
+	 *     Job creation arguments.
+	 *
+	 *     @type int    $user_id    WordPress user ID owning the job.
+	 *     @type string $mode       Import mode: ajax or background.
+	 *     @type array  $options    Job options (chunk size, metadata flags, etc.).
 	 *     @type array  $scan_queue Relative folder paths still to scan.
 	 * }
 	 * @return int|false Job ID or false on failure.
@@ -133,16 +135,16 @@ class Import_Job_Repository {
 	 * @return object
 	 */
 	protected static function hydrate_job( $job ) {
-		$job->id               = (int) $job->id;
-		$job->user_id          = (int) $job->user_id;
-		$job->total_files      = (int) $job->total_files;
-		$job->processed_files  = (int) $job->processed_files;
-		$job->imported         = (int) $job->imported;
-		$job->duplicates       = (int) $job->duplicates;
-		$job->errors           = (int) $job->errors;
-		$job->skipped          = (int) $job->skipped;
-		$job->options          = json_decode( (string) $job->options, true );
-		$job->scan_queue       = json_decode( (string) $job->scan_queue, true );
+		$job->id              = (int) $job->id;
+		$job->user_id         = (int) $job->user_id;
+		$job->total_files     = (int) $job->total_files;
+		$job->processed_files = (int) $job->processed_files;
+		$job->imported        = (int) $job->imported;
+		$job->duplicates      = (int) $job->duplicates;
+		$job->errors          = (int) $job->errors;
+		$job->skipped         = (int) $job->skipped;
+		$job->options         = json_decode( (string) $job->options, true );
+		$job->scan_queue      = json_decode( (string) $job->scan_queue, true );
 
 		if ( ! is_array( $job->options ) ) {
 			$job->options = array();
@@ -241,10 +243,10 @@ class Import_Job_Repository {
 			return 0;
 		}
 
-		$table   = self::items_table();
-		$job_id  = absint( $job_id );
+		$table    = self::items_table();
+		$job_id   = absint( $job_id );
 		$inserted = 0;
-		$chunk   = array_chunk( $paths, 100 );
+		$chunk    = array_chunk( $paths, 100 );
 
 		foreach ( $chunk as $batch ) {
 			$placeholders = array();
@@ -367,6 +369,32 @@ class Import_Job_Repository {
 				"SELECT * FROM {$table} WHERE job_id = %d AND status != %s ORDER BY processed_at DESC, id DESC LIMIT %d",
 				absint( $job_id ),
 				'pending',
+				absint( $limit )
+			)
+		);
+	}
+
+	/**
+	 * Get items for a job filtered by status.
+	 *
+	 * @since 5.4.1
+	 *
+	 * @param int    $job_id Job ID.
+	 * @param string $status Status.
+	 * @param int    $limit  Max rows.
+	 * @return array
+	 */
+	public static function get_items_by_status( $job_id, $status, $limit = 100 ) {
+		global $wpdb;
+
+		$table = self::items_table();
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		return $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT * FROM {$table} WHERE job_id = %d AND status = %s ORDER BY processed_at DESC, id DESC LIMIT %d",
+				absint( $job_id ),
+				sanitize_key( $status ),
 				absint( $limit )
 			)
 		);
@@ -554,5 +582,44 @@ class Import_Job_Repository {
 		$wpdb->delete( self::jobs_table(), array( 'id' => $job_id ), array( '%d' ) );
 
 		return true;
+	}
+
+	/**
+	 * Delete import history jobs (optionally scoped to one user).
+	 *
+	 * @since 5.4.4
+	 *
+	 * @param int|null $user_id User ID, or null for all jobs.
+	 * @return int Number of jobs deleted.
+	 */
+	public static function delete_jobs( $user_id = null ) {
+		global $wpdb;
+
+		$jobs_table  = self::jobs_table();
+		$items_table = self::items_table();
+
+		if ( null === $user_id ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$deleted = (int) $wpdb->query( "DELETE FROM {$items_table}" );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$jobs = (int) $wpdb->query( "DELETE FROM {$jobs_table}" );
+			unset( $deleted );
+			return $jobs;
+		}
+
+		$user_id = absint( $user_id );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$ids = $wpdb->get_col( $wpdb->prepare( "SELECT id FROM {$jobs_table} WHERE user_id = %d", $user_id ) );
+		if ( empty( $ids ) ) {
+			return 0;
+		}
+
+		$count = 0;
+		foreach ( $ids as $job_id ) {
+			self::delete_job( (int) $job_id );
+			++$count;
+		}
+
+		return $count;
 	}
 }

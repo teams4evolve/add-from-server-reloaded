@@ -39,6 +39,9 @@ class Import_History {
 		$this->processor = $processor;
 		add_action( 'admin_menu', array( $this, 'register_menu' ), 20 );
 		add_action( 'admin_post_afsrreloaded_delete_job', array( $this, 'handle_delete_job' ) );
+		add_action( 'admin_post_afsrreloaded_clear_history', array( $this, 'handle_clear_history' ) );
+		add_action( 'admin_post_afsrreloaded_retry_failed_job', array( $this, 'handle_retry_failed_job' ) );
+		add_action( 'admin_post_afsrreloaded_continue_job', array( $this, 'handle_continue_job' ) );
 	}
 
 	/**
@@ -47,15 +50,13 @@ class Import_History {
 	 * @since 5.3.0
 	 */
 	public function register_menu() {
-		if ( class_exists( __NAMESPACE__ . '\\Features' ) && ! Features::enabled( 'history' ) ) {
-			return;
-		}
+		$cap = Capabilities::rbac_enabled() ? Capabilities::CAP_HISTORY : 'upload_files';
 
 		$hook = add_submenu_page(
 			'add-from-server-reloaded',
 			__( 'Import History', 'add-from-server-reloaded' ),
 			__( 'Import History', 'add-from-server-reloaded' ),
-			'upload_files',
+			$cap,
 			'add-from-server-reloaded-history',
 			array( $this, 'render_page' )
 		);
@@ -64,6 +65,7 @@ class Import_History {
 			'load-' . $hook,
 			static function () {
 				wp_enqueue_style( 'add-from-server-reloaded' );
+				Pro_Teaser::enqueue_locked_ui_assets();
 			}
 		);
 	}
@@ -74,7 +76,7 @@ class Import_History {
 	 * @since 5.3.0
 	 */
 	public function handle_delete_job() {
-		if ( ! current_user_can( 'upload_files' ) ) {
+		if ( ! Capabilities::can_manage_history() ) {
 			wp_die( esc_html__( 'You do not have permission.', 'add-from-server-reloaded' ) );
 		}
 
@@ -88,7 +90,7 @@ class Import_History {
 			exit;
 		}
 
-		if ( (int) $job->user_id !== get_current_user_id() && ! current_user_can( 'manage_options' ) ) {
+		if ( get_current_user_id() !== (int) $job->user_id && ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'You cannot delete this import job.', 'add-from-server-reloaded' ) );
 		}
 
@@ -107,22 +109,163 @@ class Import_History {
 	}
 
 	/**
+	 * Clear import history jobs (admin-post).
+	 *
+	 * @since 5.4.4
+	 */
+	public function handle_clear_history() {
+		if ( ! Capabilities::can_manage_history() ) {
+			wp_die( esc_html__( 'You do not have permission.', 'add-from-server-reloaded' ) );
+		}
+
+		check_admin_referer( 'afsrreloaded_clear_history' );
+
+		$user_id = current_user_can( 'manage_options' ) ? null : get_current_user_id();
+		Import_Job_Repository::delete_jobs( $user_id );
+
+		wp_safe_redirect(
+			add_query_arg(
+				array(
+					'page'    => 'add-from-server-reloaded-history',
+					'cleared' => 1,
+				),
+				admin_url( 'admin.php' )
+			)
+		);
+		exit;
+	}
+
+	/**
+	 * Retry failed items for a job (History screen).
+	 *
+	 * @since 5.4.1
+	 */
+	public function handle_retry_failed_job() {
+		if ( ! Capabilities::can_manage_history() && ! current_user_can( 'upload_files' ) ) {
+			wp_die( esc_html__( 'You do not have permission.', 'add-from-server-reloaded' ) );
+		}
+
+		if ( ! Features::enabled( 'queue_controls' ) ) {
+			wp_die( esc_html__( 'Retry requires Add From Server Reloaded Pro.', 'add-from-server-reloaded' ) );
+		}
+
+		$job_id = isset( $_GET['job_id'] ) ? absint( $_GET['job_id'] ) : 0;
+		check_admin_referer( 'afsrreloaded_retry_failed_job_' . $job_id );
+
+		$job = Import_Job_Repository::get_job( $job_id );
+		if ( ! $job ) {
+			wp_safe_redirect( admin_url( 'admin.php?page=add-from-server-reloaded-history' ) );
+			exit;
+		}
+
+		if ( get_current_user_id() !== (int) $job->user_id && ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You cannot manage this import job.', 'add-from-server-reloaded' ) );
+		}
+
+		$result = $this->processor->retry_failed( $job_id );
+		if ( ! is_wp_error( $result ) && Features::enabled( 'background' ) ) {
+			Import_Cron::ensure_scheduled();
+			Import_Cron::schedule_soon();
+			Import_Cron::process_now( $this->processor );
+		}
+
+		wp_safe_redirect(
+			add_query_arg(
+				array(
+					'page'   => 'add-from-server-reloaded-history',
+					'job_id' => $job_id,
+					'retried' => 1,
+				),
+				admin_url( 'admin.php' )
+			)
+		);
+		exit;
+	}
+
+	/**
+	 * Continue a pending/scanning background job from History.
+	 *
+	 * @since 5.4.1
+	 */
+	public function handle_continue_job() {
+		if ( ! Capabilities::can_manage_history() && ! current_user_can( 'upload_files' ) ) {
+			wp_die( esc_html__( 'You do not have permission.', 'add-from-server-reloaded' ) );
+		}
+
+		if ( ! Features::enabled( 'background' ) ) {
+			wp_die( esc_html__( 'Background processing requires Add From Server Reloaded Pro.', 'add-from-server-reloaded' ) );
+		}
+
+		$job_id = isset( $_GET['job_id'] ) ? absint( $_GET['job_id'] ) : 0;
+		check_admin_referer( 'afsrreloaded_continue_job_' . $job_id );
+
+		$job = Import_Job_Repository::get_job( $job_id );
+		if ( ! $job ) {
+			wp_safe_redirect( admin_url( 'admin.php?page=add-from-server-reloaded-history' ) );
+			exit;
+		}
+
+		if ( get_current_user_id() !== (int) $job->user_id && ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You cannot manage this import job.', 'add-from-server-reloaded' ) );
+		}
+
+		Import_Cron::ensure_scheduled();
+		Import_Cron::schedule_soon();
+		Import_Cron::process_now( $this->processor );
+
+		wp_safe_redirect(
+			add_query_arg(
+				array(
+					'page'      => 'add-from-server-reloaded-history',
+					'job_id'    => $job_id,
+					'continued' => 1,
+				),
+				admin_url( 'admin.php' )
+			)
+		);
+		exit;
+	}
+
+	/**
 	 * Render history page.
 	 *
 	 * @since 5.3.0
 	 */
 	public function render_page() {
-		if ( ! current_user_can( 'upload_files' ) ) {
+		if ( ! current_user_can( 'upload_files' ) && ! Capabilities::can_manage_history() ) {
+			return;
+		}
+
+		if ( ! Features::enabled( 'history' ) ) {
+			Pro_Locked_Screens::history();
 			return;
 		}
 
 		$job_id = isset( $_GET['job_id'] ) ? absint( $_GET['job_id'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
-		echo '<div class="wrap">';
+		echo '<div class="wrap afsr-admin-wrap">';
 		echo '<h1>' . esc_html__( 'Import History', 'add-from-server-reloaded' ) . '</h1>';
+		echo '<div id="afsr-admin-app" class="afsr-wrap afsr-pro-page">';
+		echo '<header class="afsr-page-header" style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;">';
+		echo '<div>';
+		echo '<h2 class="afsr-page-title">' . esc_html__( 'Import History', 'add-from-server-reloaded' ) . '</h2>';
+		echo '<p class="afsr-page-subtitle">' . esc_html__( 'Every import job, with per-file results.', 'add-from-server-reloaded' ) . '</p>';
+		echo '</div>';
+		if ( ! $job_id && Capabilities::can_manage_history() ) {
+			$clear_url = wp_nonce_url(
+				admin_url( 'admin-post.php?action=afsrreloaded_clear_history' ),
+				'afsrreloaded_clear_history'
+			);
+			echo '<a class="afsr-btn afsr-btn-outline" href="' . esc_url( $clear_url ) . '" onclick="return confirm(\'' . esc_js( __( 'Delete all import history records? This cannot be undone.', 'add-from-server-reloaded' ) ) . '\');">' . esc_html__( 'Clear history', 'add-from-server-reloaded' ) . '</a>';
+		}
+		echo '</header>';
 
 		if ( ! empty( $_GET['deleted'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Import job deleted.', 'add-from-server-reloaded' ) . '</p></div>';
+		}
+
+		if ( ! empty( $_GET['cleared'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Import history cleared.', 'add-from-server-reloaded' ) . '</p></div>';
 		}
 
 		if ( $job_id ) {
@@ -131,7 +274,7 @@ class Import_History {
 			$this->render_job_list();
 		}
 
-		echo '</div>';
+		echo '</div></div>';
 	}
 
 	/**
@@ -140,8 +283,8 @@ class Import_History {
 	 * @since 5.3.0
 	 */
 	protected function render_job_list() {
-		$page    = isset( $_GET['paged'] ) ? max( 1, absint( $_GET['paged'] ) ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$args    = array(
+		$page = isset( $_GET['paged'] ) ? max( 1, absint( $_GET['paged'] ) ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$args = array(
 			'page'     => $page,
 			'per_page' => 20,
 		);
@@ -153,15 +296,13 @@ class Import_History {
 		$jobs  = Import_Job_Repository::list_jobs( $args );
 		$total = Import_Job_Repository::count_jobs( $args );
 
-		echo '<p>' . esc_html__( 'Track bulk imports, resume paused jobs, and review errors.', 'add-from-server-reloaded' ) . '</p>';
-		echo '<p><a class="button button-primary" href="' . esc_url( admin_url( 'admin.php?page=add-from-server-reloaded' ) ) . '">' . esc_html__( 'Start New Import', 'add-from-server-reloaded' ) . '</a></p>';
-
 		if ( empty( $jobs ) ) {
-			echo '<p>' . esc_html__( 'No import jobs yet.', 'add-from-server-reloaded' ) . '</p>';
+			echo '<div class="afsr-data-card"><p class="afsr-empty">' . esc_html__( 'No import jobs yet.', 'add-from-server-reloaded' ) . '</p></div>';
 			return;
 		}
 
-		echo '<table class="widefat striped afsrreloaded-history-table">';
+		echo '<div class="afsr-data-card">';
+		echo '<table class="afsr-data-table afsrreloaded-history-table">';
 		echo '<thead><tr>';
 		echo '<th>' . esc_html__( 'Job', 'add-from-server-reloaded' ) . '</th>';
 		echo '<th>' . esc_html__( 'Status', 'add-from-server-reloaded' ) . '</th>';
@@ -179,22 +320,32 @@ class Import_History {
 				admin_url( 'admin-post.php?action=afsrreloaded_delete_job&job_id=' . (int) $job->id ),
 				'afsrreloaded_delete_job'
 			);
+			$status  = (string) $job->status;
+			$badge   = 'afsr-badge--neutral';
+			if ( in_array( $status, array( 'completed', 'cancelled' ), true ) ) {
+				$badge = 'afsr-badge--success';
+			} elseif ( in_array( $status, array( 'failed', 'error' ), true ) ) {
+				$badge = 'afsr-badge--danger';
+			} elseif ( in_array( $status, array( 'running', 'pending', 'scanning' ), true ) ) {
+				$badge = 'afsr-badge--warn';
+			}
 
 			echo '<tr>';
-			echo '<td><a href="' . esc_url( $view ) . '">#' . absint( $job->id ) . '</a></td>';
-			echo '<td><span class="afsrreloaded-status afsrreloaded-status--' . esc_attr( $job->status ) . '">' . esc_html( ucfirst( $job->status ) ) . '</span></td>';
+			echo '<td><a class="afsr-link" href="' . esc_url( $view ) . '">#' . absint( $job->id ) . '</a></td>';
+			echo '<td><span class="afsr-badge ' . esc_attr( $badge ) . ' afsrreloaded-status afsrreloaded-status--' . esc_attr( $status ) . '">' . esc_html( ucfirst( $status ) ) . '</span></td>';
 			echo '<td>' . esc_html( sprintf( '%1$d / %2$d (%3$s%%)', $payload['processed'], $payload['total'], $payload['percent'] ) ) . '</td>';
 			echo '<td>' . absint( $job->imported ) . '</td>';
 			echo '<td>' . absint( $job->errors ) . '</td>';
-			echo '<td>' . esc_html( get_date_from_gmt( $job->created_at, get_option( 'date_format' ) . ' ' . get_option( 'time_format' ) ) ) . '</td>';
-			echo '<td>';
-			echo '<a href="' . esc_url( $view ) . '">' . esc_html__( 'View', 'add-from-server-reloaded' ) . '</a> | ';
-			echo '<a href="' . esc_url( $delete ) . '" onclick="return confirm(\'' . esc_js( __( 'Delete this job record?', 'add-from-server-reloaded' ) ) . '\');">' . esc_html__( 'Delete', 'add-from-server-reloaded' ) . '</a>';
-			echo '</td>';
+			echo '<td class="afsr-muted">' . esc_html( get_date_from_gmt( $job->created_at, get_option( 'date_format' ) . ' ' . get_option( 'time_format' ) ) ) . '</td>';
+			echo '<td><span class="afsr-actions">';
+			echo '<a class="afsr-link" href="' . esc_url( $view ) . '">' . esc_html__( 'View', 'add-from-server-reloaded' ) . '</a>';
+			echo '<span class="afsr-sep">|</span>';
+			echo '<a class="afsr-link-danger" href="' . esc_url( $delete ) . '" onclick="return confirm(\'' . esc_js( __( 'Delete this job record?', 'add-from-server-reloaded' ) ) . '\');">' . esc_html__( 'Delete', 'add-from-server-reloaded' ) . '</a>';
+			echo '</span></td>';
 			echo '</tr>';
 		}
 
-		echo '</tbody></table>';
+		echo '</tbody></table></div>';
 
 		$total_pages = (int) ceil( $total / 20 );
 		if ( $total_pages > 1 ) {
@@ -227,7 +378,7 @@ class Import_History {
 			return;
 		}
 
-		if ( (int) $job->user_id !== get_current_user_id() && ! current_user_can( 'manage_options' ) ) {
+		if ( get_current_user_id() !== (int) $job->user_id && ! current_user_can( 'manage_options' ) ) {
 			echo '<div class="notice notice-error"><p>' . esc_html__( 'You cannot view this import job.', 'add-from-server-reloaded' ) . '</p></div>';
 			return;
 		}
@@ -235,10 +386,17 @@ class Import_History {
 		$payload = $this->processor->status_payload( $job );
 		$back    = admin_url( 'admin.php?page=add-from-server-reloaded-history' );
 
-		echo '<p><a href="' . esc_url( $back ) . '">&larr; ' . esc_html__( 'Back to history', 'add-from-server-reloaded' ) . '</a></p>';
-		echo '<h2>' . esc_html( sprintf( /* translators: %d: job id */ __( 'Import Job #%d', 'add-from-server-reloaded' ), $job->id ) ) . '</h2>';
+		echo '<a class="afsr-link afsr-back-link" href="' . esc_url( $back ) . '">&larr; ' . esc_html__( 'Back to history', 'add-from-server-reloaded' ) . '</a>';
+		echo '<h3 class="afsr-section-title">' . esc_html( sprintf( /* translators: %d: job id */ __( 'Import Job #%d', 'add-from-server-reloaded' ), $job->id ) ) . '</h3>';
 
-		echo '<div class="afsrreloaded-job-summary">';
+		if ( ! empty( $_GET['retried'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Failed files were queued for retry.', 'add-from-server-reloaded' ) . '</p></div>';
+		}
+		if ( ! empty( $_GET['continued'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Background processing was nudged for this job.', 'add-from-server-reloaded' ) . '</p></div>';
+		}
+
+		echo '<div class="afsr-data-card afsr-job-summary">';
 		echo '<p><strong>' . esc_html__( 'Status:', 'add-from-server-reloaded' ) . '</strong> ' . esc_html( ucfirst( $job->status ) ) . '</p>';
 		echo '<p><strong>' . esc_html__( 'Mode:', 'add-from-server-reloaded' ) . '</strong> ' . esc_html( $job->mode ) . '</p>';
 		echo '<p><strong>' . esc_html__( 'Progress:', 'add-from-server-reloaded' ) . '</strong> ' . esc_html( sprintf( '%1$d / %2$d (%3$s%%)', $payload['processed'], $payload['total'], $payload['percent'] ) ) . '</p>';
@@ -248,16 +406,53 @@ class Import_History {
 		echo '<li>' . esc_html__( 'Errors:', 'add-from-server-reloaded' ) . ' ' . absint( $job->errors ) . '</li>';
 		echo '<li>' . esc_html__( 'Skipped:', 'add-from-server-reloaded' ) . ' ' . absint( $job->skipped ) . '</li>';
 		echo '</ul>';
+
+		$actions = array();
+		if ( Features::enabled( 'queue_controls' ) && (int) $job->errors > 0 ) {
+			$actions[] = '<a class="afsr-btn afsr-btn-outline" href="' . esc_url(
+				wp_nonce_url(
+					admin_url( 'admin-post.php?action=afsrreloaded_retry_failed_job&job_id=' . absint( $job->id ) ),
+					'afsrreloaded_retry_failed_job_' . absint( $job->id )
+				)
+			) . '">' . esc_html__( 'Retry failed', 'add-from-server-reloaded' ) . '</a>';
+		}
+		if ( Features::enabled( 'background' ) && in_array( $job->status, array( 'pending', 'scanning', 'running' ), true ) ) {
+			$actions[] = '<a class="afsr-btn afsr-btn-primary" href="' . esc_url(
+				wp_nonce_url(
+					admin_url( 'admin-post.php?action=afsrreloaded_continue_job&job_id=' . absint( $job->id ) ),
+					'afsrreloaded_continue_job_' . absint( $job->id )
+				)
+			) . '">' . esc_html__( 'Continue processing', 'add-from-server-reloaded' ) . '</a>';
+		}
+		if ( ! empty( $actions ) ) {
+			echo '<p class="afsrreloaded-job-actions afsr-form-actions">' . implode( ' ', $actions ) . '</p>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built from escaped URLs/labels above.
+		}
 		echo '</div>';
+
+		$failed = Import_Job_Repository::get_items_by_status( $job_id, 'error', 100 );
+		if ( ! empty( $failed ) ) {
+			echo '<section class="afsr-section"><h3 class="afsr-section-title">' . esc_html__( 'Failed files', 'add-from-server-reloaded' ) . '</h3>';
+			echo '<div class="afsr-data-card"><table class="afsr-data-table"><thead><tr>';
+			echo '<th>' . esc_html__( 'File', 'add-from-server-reloaded' ) . '</th>';
+			echo '<th>' . esc_html__( 'Message', 'add-from-server-reloaded' ) . '</th>';
+			echo '</tr></thead><tbody>';
+			foreach ( $failed as $item ) {
+				echo '<tr>';
+				echo '<td>' . esc_html( $item->file_path ) . '</td>';
+				echo '<td>' . esc_html( (string) $item->message ) . '</td>';
+				echo '</tr>';
+			}
+			echo '</tbody></table></div></section>';
+		}
 
 		$items = Import_Job_Repository::get_recent_items( $job_id, 100 );
 		if ( empty( $items ) ) {
-			echo '<p>' . esc_html__( 'No processed files yet.', 'add-from-server-reloaded' ) . '</p>';
+			echo '<p class="afsr-muted">' . esc_html__( 'No processed files yet.', 'add-from-server-reloaded' ) . '</p>';
 			return;
 		}
 
-		echo '<h3>' . esc_html__( 'Recent file results', 'add-from-server-reloaded' ) . '</h3>';
-		echo '<table class="widefat striped"><thead><tr>';
+		echo '<section class="afsr-section"><h3 class="afsr-section-title">' . esc_html__( 'Recent file results', 'add-from-server-reloaded' ) . '</h3>';
+		echo '<div class="afsr-data-card"><table class="afsr-data-table"><thead><tr>';
 		echo '<th>' . esc_html__( 'File', 'add-from-server-reloaded' ) . '</th>';
 		echo '<th>' . esc_html__( 'Status', 'add-from-server-reloaded' ) . '</th>';
 		echo '<th>' . esc_html__( 'Message', 'add-from-server-reloaded' ) . '</th>';
@@ -270,7 +465,7 @@ class Import_History {
 			echo '<td>';
 			if ( ! empty( $item->attachment_id ) ) {
 				$edit = admin_url( 'post.php?post=' . absint( $item->attachment_id ) . '&action=edit' );
-				echo '<a href="' . esc_url( $edit ) . '" target="_blank" rel="noopener noreferrer">' . esc_html__( 'View in Media Library', 'add-from-server-reloaded' ) . '</a>';
+				echo '<a class="afsr-link" href="' . esc_url( $edit ) . '" target="_blank" rel="noopener noreferrer">' . esc_html__( 'View in Media Library', 'add-from-server-reloaded' ) . '</a>';
 				if ( ! empty( $item->message ) ) {
 					echo ' — ';
 				}
@@ -280,6 +475,6 @@ class Import_History {
 			echo '</tr>';
 		}
 
-		echo '</tbody></table>';
+		echo '</tbody></table></div></section>';
 	}
 }

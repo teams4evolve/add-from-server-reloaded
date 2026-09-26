@@ -1,9 +1,9 @@
 <?php
 /**
- * Plugin Name:       Add From Server Reloaded
+ * Plugin Name:       Add From Server Reloaded (AFS Lite)
  * Plugin URI:        https://wordpress.org/plugins/add-from-server-reloaded/
- * Description:       Bypass WordPress upload limit. Import large files from your server to Media Library with reliable chunked imports. Pair with Add From Server Reloaded Pro for background jobs and advanced queue tools.
- * Version:           5.3.0
+ * Description:       Bypass WordPress upload limit. Import large files from your server to Media Library with reliable chunked imports. Pair with Add From Server Reloaded Pro (AFS Pro) for background jobs and advanced queue tools.
+ * Version:           6.0.0
  * Author:            eLearning evolve
  * Author URI:        https://elearningevolve.com/about/
  * License:           GPL-3.0+
@@ -12,7 +12,7 @@
  * Requires PHP:      7.4
  * Domain Path:       /languages
  * Requires at least: 6.0
- * Tested up to:      7.0
+ * Tested up to:      7.1
  *
  * @since             4.0.0
  * @package           Add From Server Reloaded
@@ -25,7 +25,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 defined( 'AFSRRELOADED_MIN_WP' ) || define( 'AFSRRELOADED_MIN_WP', '6.0' );
 defined( 'AFSRRELOADED_MIN_PHP' ) || define( 'AFSRRELOADED_MIN_PHP', '7.4' );
-defined( 'AFSRRELOADED_VERSION' ) || define( 'AFSRRELOADED_VERSION', '5.3.0' );
+defined( 'AFSRRELOADED_VERSION' ) || define( 'AFSRRELOADED_VERSION', '6.0.0' );
 defined( 'AFSRRELOADED_PLUGIN_FILE' ) || define( 'AFSRRELOADED_PLUGIN_FILE', __FILE__ );
 defined( 'AFSRRELOADED_PLUGIN_DIR_PATH' ) || define( 'AFSRRELOADED_PLUGIN_DIR_PATH', plugin_dir_path( __FILE__ ) );
 defined( 'AFSRRELOADED_PLUGIN_DIR_URL' ) || define( 'AFSRRELOADED_PLUGIN_DIR_URL', plugin_dir_url( __FILE__ ) );
@@ -47,12 +47,28 @@ spl_autoload_register(
 		$map      = array(
 			'plugin'                => 'class.add-from-server.php',
 			'features'              => 'includes/class-features.php',
+			'capabilities'          => 'includes/class-capabilities.php',
 			'installer'             => 'includes/class-installer.php',
 			'import-job-repository' => 'includes/class-import-job-repository.php',
 			'import-processor'      => 'includes/class-import-processor.php',
 			'import-ajax'           => 'includes/class-import-ajax.php',
 			'import-cron'           => 'includes/class-import-cron.php',
 			'import-history'        => 'includes/class-import-history.php',
+			'folder-preserve'       => 'includes/class-folder-preserve.php',
+			'file-filters'          => 'includes/class-file-filters.php',
+			'path-guard'            => 'includes/class-path-guard.php',
+			'pro-teaser'            => 'includes/class-pro-teaser.php',
+			'pro-locked-screens'    => 'includes/class-pro-locked-screens.php',
+			'email-notifications'   => 'includes/class-email-notifications.php',
+			'import-scheduler'      => 'includes/class-import-scheduler.php',
+			'import-rest-api'       => 'includes/class-import-rest-api.php',
+			'import-cli'            => 'includes/class-import-cli.php',
+			'ftp-client'            => 'includes/class-ftp-client.php',
+			'sftp-client'           => 'includes/class-sftp-client.php',
+			's3-client'             => 'includes/class-s3-client.php',
+			'remote-sources'        => 'includes/class-remote-sources.php',
+			'duplicate-manager'     => 'includes/class-duplicate-manager.php',
+			'access-settings'       => 'includes/class-access-settings.php',
 		);
 
 		if ( ! isset( $map[ $relative ] ) ) {
@@ -85,14 +101,16 @@ register_activation_hook( __FILE__, array( 'AFSRReloaded\\Installer', 'activate'
 /**
  * Bootstrap the plugin.
  *
- * Loads in admin, AJAX, cron, and WP-CLI contexts so background imports can run.
+ * Loads in admin, AJAX, cron, REST, and WP-CLI contexts so imports can run.
  *
  * @since 5.3.0
  */
 function afsrreloaded_bootstrap() {
 	$should_load = is_admin()
 		|| wp_doing_cron()
-		|| ( defined( 'WP_CLI' ) && WP_CLI );
+		|| wp_doing_ajax()
+		|| ( defined( 'WP_CLI' ) && WP_CLI )
+		|| ( defined( 'REST_REQUEST' ) && REST_REQUEST );
 
 	if ( ! $should_load ) {
 		return;
@@ -101,3 +119,13 @@ function afsrreloaded_bootstrap() {
 	AFSRReloaded\Plugin::instance();
 }
 add_action( 'plugins_loaded', 'afsrreloaded_bootstrap' );
+
+/**
+ * Ensure plugin boots for REST even when REST_REQUEST is not defined yet.
+ *
+ * @since 5.4.0
+ */
+function afsrreloaded_bootstrap_rest() {
+	AFSRReloaded\Plugin::instance();
+}
+add_action( 'rest_api_init', 'afsrreloaded_bootstrap_rest', 0 );

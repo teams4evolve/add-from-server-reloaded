@@ -1,0 +1,106 @@
+<?xml version="1.0"?>
+<ruleset name="Add From Server Reloaded">
+	<description>WordPress Coding Standards for Add From Server Reloaded Free.</description>
+
+	<file>.</file>
+
+	<exclude-pattern>*/vendor/*</exclude-pattern>
+	<exclude-pattern>*/node_modules/*</exclude-pattern>
+	<exclude-pattern>*/tests/*</exclude-pattern>
+	<exclude-pattern>*/languages/*</exclude-pattern>
+	<exclude-pattern>old-versions.php</exclude-pattern>
+	<exclude-pattern>compat.php</exclude-pattern>
+
+	<arg name="basepath" value="."/>
+	<arg name="extensions" value="php"/>
+	<arg name="parallel" value="4"/>
+	<arg value="ps"/>
+	<arg name="colors"/>
+
+	<config name="minimum_supported_wp_version" value="6.0"/>
+	<config name="testVersion" value="7.4-"/>
+
+	<rule ref="WordPress">
+		<!-- Plugin entry / class filenames follow historical AFS naming. -->
+		<exclude name="WordPress.Files.FileName"/>
+		<exclude name="Generic.Files.LineEndings"/>
+	</rule>
+
+	<rule ref="WordPress.WP.I18n">
+		<properties>
+			<property name="text_domain" type="array">
+				<element value="add-from-server-reloaded"/>
+			</property>
+		</properties>
+	</rule>
+
+	<!-- Custom table names cannot be placeholders; values still use $wpdb->prepare(). -->
+	<rule ref="WordPress.DB.PreparedSQL.InterpolatedNotPrepared">
+		<exclude-pattern>*/class-import-job-repository.php</exclude-pattern>
+		<exclude-pattern>*/class-installer.php</exclude-pattern>
+		<exclude-pattern>*/class-duplicate-manager.php</exclude-pattern>
+	</rule>
+	<rule ref="WordPress.DB.PreparedSQL.NotPrepared">
+		<exclude-pattern>*/class-import-job-repository.php</exclude-pattern>
+		<exclude-pattern>*/class-installer.php</exclude-pattern>
+	</rule>
+
+	<!-- FTP/SFTP/local staging require direct filesystem APIs. -->
+	<rule ref="WordPress.WP.AlternativeFunctions.file_system_operations_*">
+		<exclude-pattern>*/class-ftp-client.php</exclude-pattern>
+		<exclude-pattern>*/class-sftp-client.php</exclude-pattern>
+		<exclude-pattern>*/class-s3-client.php</exclude-pattern>
+		<exclude-pattern>*/class-remote-sources.php</exclude-pattern>
+		<exclude-pattern>*/class.add-from-server.php</exclude-pattern>
+	</rule>
+	<rule ref="WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents">
+		<exclude-pattern>*/class-s3-client.php</exclude-pattern>
+		<exclude-pattern>*/class-ftp-client.php</exclude-pattern>
+		<exclude-pattern>*/class-sftp-client.php</exclude-pattern>
+	</rule>
+
+	<!-- Background imports intentionally use sub-15-minute cron intervals. -->
+	<rule ref="WordPress.WP.CronInterval.CronSchedulesInterval">
+		<exclude-pattern>*/class-import-cron.php</exclude-pattern>
+		<exclude-pattern>*/class-import-scheduler.php</exclude-pattern>
+		<exclude-pattern>*/class-installer.php</exclude-pattern>
+	</rule>
+
+	<!-- View partials receive sanitized $view data from controllers. -->
+	<rule ref="WordPress.Security.NonceVerification.Recommended">
+		<exclude-pattern>*/admin/partials/*</exclude-pattern>
+	</rule>
+	<rule ref="WordPress.PHP.DontExtract.extract_extract">
+		<exclude-pattern>*/admin/partials/*</exclude-pattern>
+	</rule>
+	<rule ref="WordPress.WP.GlobalVariablesOverride.Prohibited">
+		<exclude-pattern>*/admin/partials/*</exclude-pattern>
+	</rule>
+	<rule ref="Squiz.Commenting.InlineComment.InvalidEndChar">
+		<exclude-pattern>*/admin/partials/*</exclude-pattern>
+	</rule>
+	<rule ref="Squiz.Commenting.InlineComment.SpacingAfter">
+		<exclude-pattern>*/admin/partials/*</exclude-pattern>
+	</rule>
+	<rule ref="Squiz.Commenting.InlineComment.DocBlock">
+		<exclude-pattern>*/admin/partials/*</exclude-pattern>
+	</rule>
+	<rule ref="Generic.Commenting.DocComment.MissingShort">
+		<exclude-pattern>*/admin/partials/*</exclude-pattern>
+	</rule>
+	<rule ref="Squiz.Commenting.FunctionCommentThrowTag">
+		<severity>0</severity>
+	</rule>
+
+	<!-- Direct file ops in FTP/staging and main importer. -->
+	<rule ref="WordPress.WP.AlternativeFunctions">
+		<exclude-pattern>*/class-ftp-client.php</exclude-pattern>
+		<exclude-pattern>*/class-sftp-client.php</exclude-pattern>
+		<exclude-pattern>*/class-s3-client.php</exclude-pattern>
+		<exclude-pattern>*/class-remote-sources.php</exclude-pattern>
+		<exclude-pattern>*/class.add-from-server.php</exclude-pattern>
+		<exclude-pattern>*/class-import-processor.php</exclude-pattern>
+	</rule>
+
+	<rule ref="PHPCompatibilityWP"/>
+</ruleset>

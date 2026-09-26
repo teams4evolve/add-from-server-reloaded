@@ -1,5 +1,19 @@
 # Add From Server Reloaded - Version History
 
+## Version 6.0.0
+
+Major free release (AFS Lite).
+
+- Freemium AFS Lite / AFS Pro experience with refreshed Import UI and Pro teasers
+- Chunked AJAX bulk import, folder scanning, and cancel support
+- Settings screen; Import Files and Settings links on the Plugins screen
+- Display name: Add From Server Reloaded (AFS Lite)
+- Security: `afsrreloaded_check_duplicate` requires a real file under the configured root (Path_Guard). Thanks to comradezephyr for responsible disclosure.
+- Security: Skip content hashing for non-regular files and files over 64 MiB by default (`afsrreloaded_file_hash_max_bytes`) to limit md5_file DoS
+- Path and import security hardening
+- Pro-ready modules unlock with Add From Server Reloaded Pro (AFS Pro)
+- Tested up to WordPress 7.1
+
 ## Version 5.0.0 - October 25, 2025
 
 ### 🎉 MAJOR UPDATE - Complete Plugin Overhaul

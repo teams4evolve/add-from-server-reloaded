@@ -1,24 +1,25 @@
 # Add From Server Reloaded - Bypass WordPress Upload Limit Plugin
 
-[![WordPress Plugin Version](https://img.shields.io/badge/version-5.2.0-blue)](https://wordpress.org/plugins/add-from-server-reloaded/)
-[![WordPress Compatibility](https://img.shields.io/badge/WordPress-6.0--6.8-brightgreen)](https://wordpress.org/)
+[![WordPress Plugin Version](https://img.shields.io/badge/version-6.0.0-blue)](https://wordpress.org/plugins/add-from-server-reloaded/)
+[![WordPress Compatibility](https://img.shields.io/badge/WordPress-6.0--7.1-brightgreen)](https://wordpress.org/)
 [![PHP Compatibility](https://img.shields.io/badge/PHP-7.4--8.3-purple)](https://www.php.net/)
 [![License](https://img.shields.io/badge/license-GPL--3.0-orange)](LICENSE)
-[![WordPress.org](https://img.shields.io/badge/WordPress.org-100%2B%20installs-success)](https://wordpress.org/plugins/add-from-server-reloaded/)
+[![WordPress.org](https://img.shields.io/badge/WordPress.org-4000%2B%20installs-success)](https://wordpress.org/plugins/add-from-server-reloaded/)
 [![Downloads](https://img.shields.io/badge/downloads-WordPress.org-blue)](https://wordpress.org/plugins/add-from-server-reloaded/)
 
 ### WordPress.org Plugin Metadata
 | Field | Value |
 |-------|-------|
+| **Plugin Name** | Add From Server Reloaded (AFS Lite) |
 | **Requires at least** | 6.0 |
-| **Tested up to** | 7.0 |
-| **Stable tag** | 5.2.1 |
+| **Tested up to** | 7.1 |
+| **Stable tag** | 6.0.0 |
 | **Requires PHP** | 7.4 |
-| **Contributors** | dd32, elearningevolve, adeelraza |
+| **Contributors** | dd32, elearningevolve |
 | **Donate link** | [Support via Stripe](https://link.elearningevolve.com/self-pay) |
 
 #### Upgrade Notice
-- **5.2.0** – Imports now use default WordPress year/month folders. Original file dates preserved. Existing URLs unchanged.
+- **6.0.0** Major free release: AFS Lite / AFS Pro freemium flow, chunked imports, Settings links, and security hardening.
 
 ---
 
