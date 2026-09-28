@@ -335,7 +335,7 @@ $import_url = admin_url( 'admin.php?page=add-from-server-reloaded' );
 				<div class="afsr-stage-success">
 					<span class="afsr-badge afsr-badge--success"><?php esc_html_e( 'Staged', 'add-from-server-reloaded' ); ?></span>
 					<span>
-						<?php esc_html_e( 'Files copied to staging — ready to import.', 'add-from-server-reloaded' ); ?>
+						<?php esc_html_e( 'Files copied to staging. Ready to import.', 'add-from-server-reloaded' ); ?>
 						<a class="afsr-link" href="<?php echo esc_url( $import_url ); ?>"><?php esc_html_e( 'Review & Import', 'add-from-server-reloaded' ); ?></a>
 					</span>
 				</div>

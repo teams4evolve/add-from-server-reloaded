@@ -1,6 +1,6 @@
 <?php
 /**
- * Uninstall Add From Server Reloaded
+ * Uninstall Add From Server Lite
  *
  * Removes all plugin data when the plugin is deleted.
  *

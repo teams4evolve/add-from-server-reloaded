@@ -1,5 +1,5 @@
 /**
- * Add From Server Reloaded - Main Import wizard UI interactions.
+ * Add From Server Lite - Main Import wizard UI interactions.
  * IIFE + event delegation. Depends on jQuery and existing import AJAX script.
  */
 ( function( $ ) {

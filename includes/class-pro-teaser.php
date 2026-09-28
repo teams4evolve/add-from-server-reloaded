@@ -29,7 +29,7 @@ class Pro_Teaser {
 	 * @since 5.4.2
 	 * @var string
 	 */
-	const UPGRADE_URL = 'https://elearningevolve.com/products/add-from-server-reloaded-pro/';
+	const UPGRADE_URL = 'https://elearningevolve.com/products/add-from-server-pro/';
 
 	/**
 	 * Pro Features admin page slug.
@@ -221,9 +221,20 @@ class Pro_Teaser {
 	/**
 	 * Sidebar-only PRO badge / Get Pro styling (keeps default WP admin fonts).
 	 *
+	 * Only loads on Add From Server Lite admin screens so other wp-admin
+	 * pages (and the frontend) never receive this stylesheet.
+	 *
 	 * @since 5.4.3
+	 *
+	 * @param string $hook Current admin page hook (unused; screen gated via page slug).
 	 */
-	public static function enqueue_menu_badge_assets() {
+	public static function enqueue_menu_badge_assets( $hook = '' ) {
+		unset( $hook );
+
+		if ( ! self::is_plugin_screen() ) {
+			return;
+		}
+
 		$css = '
 			#adminmenu .afsr-menu-pro-badge {
 				display: inline-block;
@@ -238,7 +249,7 @@ class Pro_Teaser {
 				line-height: 1.5;
 				vertical-align: middle;
 			}
-			#adminmenu .wp-submenu a[href*="elearningevolve.com/products/add-from-server-reloaded-pro"] {
+			#adminmenu .wp-submenu a[href*="elearningevolve.com/products/add-from-server-pro"] {
 				color: #e8c56a !important;
 			}
 			#adminmenu .afsr-menu-external {
@@ -254,6 +265,9 @@ class Pro_Teaser {
 	/**
 	 * Add PRO badges to Free submenu labels and normalize order.
 	 *
+	 * Lite: Settings is 2nd (after the main Import item).
+	 * Pro:  Settings sits after Access Control (feature menus first).
+	 *
 	 * @since 5.4.3
 	 */
 	public static function decorate_submenu_labels() {
@@ -262,7 +276,8 @@ class Pro_Teaser {
 			return;
 		}
 
-		$top_label = self::is_pro_active()
+		$pro_active = self::is_pro_active();
+		$top_label  = $pro_active
 			? __( 'AFS Pro', 'add-from-server-reloaded' )
 			: __( 'AFS Lite', 'add-from-server-reloaded' );
 
@@ -276,26 +291,37 @@ class Pro_Teaser {
 			}
 		}
 
-		if ( self::is_pro_active() ) {
-			return;
-		}
-
 		$pro_slugs = array(
 			'add-from-server-reloaded-history'   => true,
 			'add-from-server-reloaded-scheduler' => true,
 		);
 
-		$desired = array(
-			'add-from-server-reloaded',
-			'add-from-server-reloaded-history',
-			'add-from-server-reloaded-scheduler',
-			'add-from-server-reloaded-remote',
-			'add-from-server-reloaded-duplicates',
-			'add-from-server-reloaded-email',
-			'add-from-server-reloaded-access',
-			'add-from-server-reloaded-settings',
-			self::PAGE_FEATURES,
-		);
+		if ( $pro_active ) {
+			// Pro: feature menus first; Settings after Access Control.
+			$desired = array(
+				'add-from-server-reloaded',
+				'add-from-server-reloaded-history',
+				'add-from-server-reloaded-scheduler',
+				'add-from-server-reloaded-remote',
+				'add-from-server-reloaded-duplicates',
+				'add-from-server-reloaded-email',
+				'add-from-server-reloaded-access',
+				'add-from-server-reloaded-settings',
+			);
+		} else {
+			// Lite: Settings 2nd; Pro Features / Get Pro stay at the end.
+			$desired = array(
+				'add-from-server-reloaded',
+				'add-from-server-reloaded-settings',
+				'add-from-server-reloaded-history',
+				'add-from-server-reloaded-scheduler',
+				'add-from-server-reloaded-remote',
+				'add-from-server-reloaded-duplicates',
+				'add-from-server-reloaded-email',
+				'add-from-server-reloaded-access',
+				self::PAGE_FEATURES,
+			);
+		}
 
 		$by_slug = array();
 		$extras  = array();
@@ -304,7 +330,7 @@ class Pro_Teaser {
 				continue;
 			}
 			$slug = (string) $item[2];
-			if ( isset( $pro_slugs[ $slug ] ) && false === strpos( (string) $item[0], 'afsr-menu-pro-badge' ) ) {
+			if ( ! $pro_active && isset( $pro_slugs[ $slug ] ) && false === strpos( (string) $item[0], 'afsr-menu-pro-badge' ) ) {
 				$item[0] = wp_strip_all_tags( (string) $item[0] ) . ' <span class="afsr-menu-pro-badge">PRO</span>';
 			}
 			if ( 0 === strpos( $slug, 'http://' ) || 0 === strpos( $slug, 'https://' ) ) {
@@ -345,7 +371,7 @@ class Pro_Teaser {
 		return array(
 			'background'          => array(
 				'title'       => __( 'Keep importing after you leave', 'add-from-server-reloaded' ),
-				'description' => __( 'Start a large import, then leave the page — Pro keeps working in the background until it finishes.', 'add-from-server-reloaded' ),
+				'description' => __( 'Start a large import, then leave the page. Pro keeps working in the background until it finishes.', 'add-from-server-reloaded' ),
 				'slug'        => 'background',
 			),
 			'defer_thumbnails'    => array(
@@ -360,12 +386,12 @@ class Pro_Teaser {
 			),
 			'advanced_duplicates' => array(
 				'title'       => __( 'Smarter duplicate handling', 'add-from-server-reloaded' ),
-				'description' => __( 'Choose to skip, replace, or keep both copies when the same file already exists — plus tools to clean up duplicates.', 'add-from-server-reloaded' ),
+				'description' => __( 'Choose to skip, replace, or keep both copies when the same file already exists, plus tools to clean up duplicates.', 'add-from-server-reloaded' ),
 				'slug'        => 'advanced_duplicates',
 			),
 			'queue_controls'      => array(
 				'title'       => __( 'Pause, resume, and retry', 'add-from-server-reloaded' ),
-				'description' => __( 'Pause a long import, continue later, and retry only the files that failed — without starting over.', 'add-from-server-reloaded' ),
+				'description' => __( 'Pause a long import, continue later, and retry only the files that failed, without starting over.', 'add-from-server-reloaded' ),
 				'slug'        => 'queue_controls',
 			),
 			'history'             => array(
@@ -400,7 +426,7 @@ class Pro_Teaser {
 			),
 			'wp_cli'              => array(
 				'title'       => __( 'Command-line tools (WP-CLI)', 'add-from-server-reloaded' ),
-				'description' => __( 'Run imports and schedules from the server command line — useful for developers and hosting scripts.', 'add-from-server-reloaded' ),
+				'description' => __( 'Run imports and schedules from the server command line. Useful for developers and hosting scripts.', 'add-from-server-reloaded' ),
 				'slug'        => 'wp_cli',
 			),
 		);
@@ -477,7 +503,7 @@ class Pro_Teaser {
 	 */
 	public static function render_settings_section() {
 		self::render_upgrade_banner(
-			__( 'Unlock the full Add From Server Reloaded toolkit', 'add-from-server-reloaded' ),
+			__( 'Unlock the full Add From Server Lite toolkit', 'add-from-server-reloaded' ),
 			__( 'Pro adds background imports, history, schedules, remote FTP/S3, email alerts, and access control.', 'add-from-server-reloaded' )
 		);
 	}
@@ -621,7 +647,7 @@ class Pro_Teaser {
 				<div class="afsr-features-hero">
 					<div>
 						<h1 class="afsr-page-title"><?php esc_html_e( 'Pro Features', 'add-from-server-reloaded' ); ?></h1>
-						<p class="afsr-page-subtitle"><?php esc_html_e( 'Everything below is included with Add From Server Reloaded Pro.', 'add-from-server-reloaded' ); ?></p>
+						<p class="afsr-page-subtitle"><?php esc_html_e( 'Everything below is included with Add From Server Pro.', 'add-from-server-reloaded' ); ?></p>
 					</div>
 					<a class="afsr-btn afsr-btn-primary" href="<?php echo esc_url( $upgrade ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Upgrade to Pro', 'add-from-server-reloaded' ); ?></a>
 				</div>
@@ -651,7 +677,7 @@ class Pro_Teaser {
 		return array(
 			array(
 				'title'       => __( 'Keep importing after you leave', 'add-from-server-reloaded' ),
-				'description' => __( 'Start a large import, then leave the page — Pro keeps working until it finishes.', 'add-from-server-reloaded' ),
+				'description' => __( 'Start a large import, then leave the page. Pro keeps working until it finishes.', 'add-from-server-reloaded' ),
 			),
 			array(
 				'title'       => __( 'Faster image imports', 'add-from-server-reloaded' ),

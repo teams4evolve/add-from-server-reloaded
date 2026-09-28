@@ -1,6 +1,6 @@
 <?php
 /**
- * WP-CLI commands for Add From Server Reloaded.
+ * WP-CLI commands for Add From Server Lite.
  *
  * @package AFSRReloaded
  * @since   5.4.0
@@ -79,7 +79,7 @@ class Import_Cli {
 			return;
 		}
 
-		WP_CLI::error( 'WP-CLI support requires Add From Server Reloaded Pro with a valid license.' );
+		WP_CLI::error( 'WP-CLI support requires Add From Server Pro with a valid license.' );
 	}
 
 	/**

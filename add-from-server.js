@@ -1,9 +1,9 @@
 /**
- * Add From Server Reloaded - JavaScript
+ * Add From Server Lite - JavaScript
  *
  * Handles UI helpers and chunked / resumable bulk imports.
  *
- * @package Add From Server Reloaded
+ * @package Add From Server Lite
  * @since   4.0.0
  */
 
@@ -689,7 +689,7 @@ jQuery( document ).ready( function( $ ) {
 		}
 
 		if ( $( '.afsrreloaded-file-count' ).length === 0 ) {
-			$( '.afsrreloaded-import-status' ).before( '<span class="afsrreloaded-file-count" style="margin-left: 15px; color: #666;"></span>' );
+			$( '.afsrreloaded-import-status' ).before( '<span class="afsrreloaded-file-count" style="margin-left: 15px; color: #000;"></span>' );
 		}
 
 		$( '.afsrreloaded-file-count' ).text( countText );

@@ -34,7 +34,7 @@ class Features {
 		$feature = sanitize_key( $feature );
 
 		/**
-		 * Filters whether an Add From Server Reloaded Pro feature is enabled.
+		 * Filters whether an Add From Server Pro feature is enabled.
 		 *
 		 * @since 5.3.0
 		 *

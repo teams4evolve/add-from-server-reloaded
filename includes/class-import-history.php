@@ -146,7 +146,7 @@ class Import_History {
 		}
 
 		if ( ! Features::enabled( 'queue_controls' ) ) {
-			wp_die( esc_html__( 'Retry requires Add From Server Reloaded Pro.', 'add-from-server-reloaded' ) );
+			wp_die( esc_html__( 'Retry requires Add From Server Pro.', 'add-from-server-reloaded' ) );
 		}
 
 		$job_id = isset( $_GET['job_id'] ) ? absint( $_GET['job_id'] ) : 0;
@@ -193,7 +193,7 @@ class Import_History {
 		}
 
 		if ( ! Features::enabled( 'background' ) ) {
-			wp_die( esc_html__( 'Background processing requires Add From Server Reloaded Pro.', 'add-from-server-reloaded' ) );
+			wp_die( esc_html__( 'Background processing requires Add From Server Pro.', 'add-from-server-reloaded' ) );
 		}
 
 		$job_id = isset( $_GET['job_id'] ) ? absint( $_GET['job_id'] ) : 0;

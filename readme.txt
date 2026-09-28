@@ -1,90 +1,85 @@
-=== Add From Server Reloaded ===
+=== Add From Server Lite ===
 Contributors: dd32, elearningevolve
 Donate link: https://link.elearningevolve.com/self-pay
 Tags: upload-limit, large-files, ftp, import, upload
 Requires at least: 6.0
-Tested up to: 7.1
+Tested up to: 7.1.2
 Requires PHP: 7.4
 Stable tag: 6.0.0
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
-Bypass WordPress upload limits and import large files or folders from your server straight into the Media Library.
+Import large files into the Media Library from your server. Skip browser upload limits without touching php.ini.
 
 == Description ==
 
-**Dedicated Support**
-For quick support, please contact us [here](https://elearningevolve.com/contact/).
+## Stop fighting WordPress upload limits
 
-**Add From Server Reloaded (AFS Lite)**
+Hosting caps and PHP limits should not decide whether your video, RAW photo, or product image set makes it into WordPress. **Add From Server Lite (AFS Lite)** lets you place files on the server with FTP or SSH, then import them into the Media Library from wp-admin.
 
-Stuck on WordPress upload limits? Large videos, RAW photos, PDFs, and bulk product images often fail in the browser uploader. Add From Server Reloaded (AFS Lite) lets you move those files to the server with FTP or SSH, then import them into the Media Library from wp-admin. No php.ini edits and no host tickets required.
+No php.ini edits. No host tickets. Works on shared hosting, multisite, and WooCommerce stores.
 
-Works on shared hosting, multisite, WooCommerce stores, and current WordPress releases.
+Need help? [Contact eLearning evolve](https://elearningevolve.com/contact/).
 
-= How It Works =
+---
+
+### How it works
 
 1. Upload files to your server with FTP or SSH (no browser size limit).
-2. Open AFS Lite in the WordPress admin and browse to the folder.
+2. Open **AFS Lite** in WordPress and browse to the folder.
 3. Select files or a whole folder and import them into the Media Library.
 
-= Features =
+That is the whole idea: put the files on disk first, then let WordPress register them properly.
 
-**File import and management**
+---
 
-* One-click folder import, including subfolders
-* Smart duplicate detection so repeat imports stay clean
-* Real-time file search
-* Filters and pagination for large directories
-* Configurable root directory in Settings
-* Show or hide hidden / non-importable files
-* Last modified column
-* Chunked batch import progress (safer on long imports)
-* Keyboard shortcuts (Ctrl+A to select all, Esc to clear)
-* Import summary with links to new Media Library items
+### Built for real media libraries
 
-**User interface**
+- **Folder import** — bring in a whole tree, including subfolders, in one pass.
+- **Chunked imports** — long jobs stay safer on shared hosts; cancel when you need to.
+- **Duplicate awareness** — reduce accidental re-imports of the same file.
+- **Search, filters, and pagination** — find what you need in large directories.
+- **Configurable root** — choose which area of the server the plugin may browse.
+- **Clear import summary** — jump straight to the new Media Library items.
 
-* Clear folder vs file layout with checkboxes
-* Clickable breadcrumbs
-* Import actions at the top and bottom of the list
-* Selected file and folder counts
+---
 
-**Security and performance**
+### A UI that stays out of your way
 
-* Directory traversal protection
-* Dangerous file type blocking (PHP, EXE, and similar)
-* CSRF protection with nonces on forms and AJAX
-* Real path validation before browse or import
-* Input sanitization and output escaping
-* Memory-conscious scanning for large trees
+Browse folders and files with checkboxes, breadcrumbs, and selection counts. Import actions sit at the top and bottom of the list so you are not scrolling forever on big directories. Keyboard shortcuts help when you are selecting a lot at once (Ctrl+A to select all, Esc to clear).
 
-**Compatibility**
+---
 
-* WordPress 6.0 to 7.1
-* PHP 7.4 to 8.3
-* WooCommerce compatible
-* Multisite compatible
-* Works on shared hosting
+### Security that matches the job
 
-= Add From Server Reloaded Pro (AFS Pro) =
+Importing from the server means path safety matters. AFS Lite is built with that in mind:
 
-The free plugin covers browsing and importing from the local server. [AFS Pro](https://elearningevolve.com/products/add-from-server-reloaded-pro/) unlocks extras when you need more control at scale:
+- Files must sit under your configured root (path boundary checks).
+- Dangerous types such as PHP and executables are blocked by default.
+- Forms and AJAX use WordPress nonces.
+- Paths are validated before browse or import.
+- Output is escaped; inputs are sanitized.
 
-* Background imports (leave the page while jobs continue)
-* Scheduled and recurring imports
-* Import history with per-file results
-* Pause, resume, and retry failed items
-* Folder structure preserve options
-* Remote FTP / SFTP and cloud (S3) sources
-* REST API and WP-CLI tools
-* Email alerts for import jobs
-* Role-based access controls
-* Priority email support with your license
+---
 
-[Get Add From Server Reloaded Pro](https://elearningevolve.com/products/add-from-server-reloaded-pro/)
+### Add From Server Pro when you outgrow the basics
 
-= Our Other Plugins =
+Lite covers local browse and import. **[Add From Server Pro (AFS Pro)](https://elearningevolve.com/products/add-from-server-pro/)** unlocks the heavier workflow tools:
+
+- Background imports that keep going after you leave the page
+- Scheduled and recurring folder imports
+- Import history with per-file results
+- Pause, resume, and retry failed items
+- Folder structure preserve options
+- Remote FTP / SFTP and S3-compatible sources
+- REST API and WP-CLI
+- Email alerts and role-based access control
+
+[Get Add From Server Pro](https://elearningevolve.com/products/add-from-server-pro/)
+
+---
+
+### Our other plugins
 
 1. [WPZoomy](https://wpzoomy.com/)
 2. [Virtual Classroom for WordPress (Free)](https://wordpress.org/plugins/video-conferencing-with-bbb/)
@@ -97,53 +92,51 @@ The free plugin covers browsing and importing from the local server. [AFS Pro](h
 
 == Installation ==
 
-Here is a quick overview of the installation.
+Getting started is straightforward.
 
-1. Log in to WordPress as an administrator and open **Plugins** in the sidebar.
-2. Click **Add New**.
-3. Search for **Add From Server Reloaded**.
-4. Find the plugin by eLearning evolve and click **Install Now**.
-5. Click **Activate**.
-6. In the admin sidebar, open **AFS Lite** (or **AFS Pro** if the Pro add-on is also active).
-7. Optional: open **Settings** under that menu and set the root directory you want to browse.
-8. Upload your large files to that area of the server with FTP or SSH.
-9. Use **Import Files** to select files or folders and import them into the Media Library.
+1. In WordPress admin, open **Plugins → Add New**.
+2. Search for **Add From Server Lite**.
+3. Install and activate the plugin by eLearning evolve.
+4. Open **AFS Lite** in the admin menu (or **AFS Pro** if the Pro add-on is also active).
+5. Optional: under **Settings**, set the root directory you want to browse.
+6. Upload large files to that area with FTP or SSH.
+7. Use **Import Files** to select files or folders and send them into the Media Library.
 
-You can also upload the plugin zip from Plugins > Add New > Upload Plugin if you downloaded it from WordPress.org.
+You can also upload a zip from Plugins → Add New → Upload Plugin if you downloaded it from WordPress.org.
 
 == Frequently Asked Questions ==
 
 = How do I bypass WordPress upload limits? =
 
-Upload the files to your server with FTP or SSH, then import them with this plugin. The browser upload limit no longer applies.
+Upload the files to your server with FTP or SSH, then import them with AFS Lite. The browser upload limit no longer applies to those files.
 
-= Can I upload large videos or RAW photos? =
+= Can I import large videos, PDFs, or RAW photos? =
 
-Yes. Any size that fits on your disk works, including large video, PDF, and RAW files, as long as WordPress supports the file type.
+Yes. If the file fits on disk and WordPress supports the type, you can import it — including large video, PDF, and RAW files.
 
-= Can I bulk import product images for WooCommerce? =
+= Can I bulk import WooCommerce product images? =
 
-Yes. Upload the image folder by FTP, then import the folder into the Media Library and attach the media to your products as usual.
+Yes. Upload the image folder by FTP, import the folder into the Media Library, then attach media to products as usual.
 
-= Does this require server access? =
+= Do I need root access or php.ini changes? =
 
-You need FTP or SSH access to place files on the server. You do not need root access or php.ini changes.
+No. You need FTP or SSH access to place files on the server. You do not need root access or PHP config edits.
 
-= Is it safe for shared hosting? =
+= Is it safe on shared hosting? =
 
 Yes. No server config changes are required. The plugin blocks directory traversal and dangerous file types by default.
 
 = What is the difference between AFS Lite and AFS Pro? =
 
-AFS Lite (this free plugin) imports from folders on the same server. AFS Pro adds background and scheduled imports, history, remote FTP/S3, REST/CLI, email alerts, RBAC, and more. Details: [Add From Server Reloaded Pro](https://elearningevolve.com/products/add-from-server-reloaded-pro/).
+AFS Lite imports from folders on the same server. AFS Pro adds background and scheduled imports, history, remote FTP/S3, REST/CLI, email alerts, RBAC, and more. Details: [Add From Server Pro](https://elearningevolve.com/products/add-from-server-pro/).
 
 = Do I need Pro for basic imports? =
 
-No. Folder browse and import to the Media Library are included in the free plugin.
+No. Browse and import to the Media Library are included in the free plugin.
 
 = Where do I get a Pro license? =
 
-Purchase from [eLearning evolve](https://elearningevolve.com/products/add-from-server-reloaded-pro/). Your license key is listed under My Account after checkout. Activate it under AFS Lite / AFS Pro Settings on your site.
+Purchase from [eLearning evolve](https://elearningevolve.com/products/add-from-server-pro/). Your key appears under My Account after checkout. Activate it under AFS Lite / AFS Pro → Settings.
 
 == Screenshots ==
 
@@ -155,15 +148,14 @@ Purchase from [eLearning evolve](https://elearningevolve.com/products/add-from-s
 == Changelog ==
 
 = 6.0.0 =
-* Major free release: freemium AFS Lite / AFS Pro experience, refreshed Import UI, and Pro feature teasers in the free plugin.
+* Major Upgrade: freemium AFS Lite / AFS Pro experience, refreshed Import UI, and Pro feature teasers in the free plugin. Get [Add From Server Pro](https://elearningevolve.com/products/add-from-server-pro/).
 * Chunked AJAX bulk import engine with folder scanning and cancel support.
 * Settings screen for root directory and related options; Import Files and Settings links on the Plugins screen.
-* Plugin display name updated to Add From Server Reloaded (AFS Lite).
+* Plugin display name updated to Add From Server Lite.
 * Security: Duplicate-check AJAX (`afsrreloaded_check_duplicate`) now requires a real file under the configured root (Path_Guard). Thanks to comradezephyr for responsible disclosure.
 * Security: File hashing skips non-regular files and files larger than 64 MiB by default (filter: afsrreloaded_file_hash_max_bytes) to limit request-time DoS via md5_file.
 * Security hardening for path boundaries, open_basedir-safe root checks, and safer handling of files already under uploads.
 * Pro-ready modules (history, schedules, remote FTP/SFTP/S3, email alerts, RBAC, REST/CLI) ship in Free and unlock with a valid AFS Pro license.
-* Tested up to WordPress 7.1.
 
 = 5.3.0 =
 * Freemium Free/Pro experience groundwork and Import UI refresh.
@@ -195,7 +187,7 @@ Purchase from [eLearning evolve](https://elearningevolve.com/products/add-from-s
 * Namespace and PHP 8+ compatibility updates.
 
 = 4.0.0 =
-* Initial Add From Server Reloaded release.
+* Initial Add From Server Lite release.
 
 == Upgrade Notice ==
 

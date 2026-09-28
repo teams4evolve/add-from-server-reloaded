@@ -1,7 +1,7 @@
-# Add From Server Reloaded - Bypass WordPress Upload Limit Plugin
+# Add From Server Lite - Bypass WordPress Upload Limit Plugin
 
 [![WordPress Plugin Version](https://img.shields.io/badge/version-6.0.0-blue)](https://wordpress.org/plugins/add-from-server-reloaded/)
-[![WordPress Compatibility](https://img.shields.io/badge/WordPress-6.0--7.1-brightgreen)](https://wordpress.org/)
+[![WordPress Compatibility](https://img.shields.io/badge/WordPress-6.0--7.1.2-brightgreen)](https://wordpress.org/)
 [![PHP Compatibility](https://img.shields.io/badge/PHP-7.4--8.3-purple)](https://www.php.net/)
 [![License](https://img.shields.io/badge/license-GPL--3.0-orange)](LICENSE)
 [![WordPress.org](https://img.shields.io/badge/WordPress.org-4000%2B%20installs-success)](https://wordpress.org/plugins/add-from-server-reloaded/)
@@ -10,9 +10,9 @@
 ### WordPress.org Plugin Metadata
 | Field | Value |
 |-------|-------|
-| **Plugin Name** | Add From Server Reloaded (AFS Lite) |
+| **Plugin Name** | Add From Server Lite |
 | **Requires at least** | 6.0 |
-| **Tested up to** | 7.1 |
+| **Tested up to** | 7.1.2 |
 | **Stable tag** | 6.0.0 |
 | **Requires PHP** | 7.4 |
 | **Contributors** | dd32, elearningevolve |
@@ -27,7 +27,7 @@
 
 Tired of seeing *"The uploaded file exceeds the upload_max_filesize directive"* errors? Can't upload large videos because your hosting limits uploads to 64MB? Need to bulk import hundreds of product images but keep timing out?
 
-**Add From Server Reloaded** solves all these problems by letting you import files directly from your server to WordPress Media Library - bypassing upload limits entirely. No PHP configuration needed. No server access required.
+**Add From Server Lite** solves all these problems by letting you import files directly from your server to WordPress Media Library - bypassing upload limits entirely. No PHP configuration needed. No server access required.
 
 ---
 
@@ -90,14 +90,14 @@ Upload timeouts and browser crashes
 
 ---
 
-## The Solution: Add From Server Reloaded
+## The Solution: Add From Server Lite
 
 **Import files directly from your server to WordPress Media Library - completely bypassing all upload limits.**
 
 ### How It Works (3 Simple Steps)
 
 1. **Upload via FTP/SSH** → Put files on your server (no size limit!)
-2. **Open Plugin** → Navigate to Media > Add From Server Reloaded
+2. **Open Plugin** → Navigate to Media > Add From Server Lite
 3. **Import** → Select files/folders and import to Media Library
 
 **That's it!** Files appear in your WordPress Media Library, ready to use.
@@ -179,7 +179,7 @@ Upload timeouts and browser crashes
 ### Method 1: WordPress Admin (Recommended)
 
 1. Go to **Plugins → Add New** in WordPress admin
-2. Search for **"Add From Server Reloaded"**
+2. Search for **"Add From Server Lite"**
 3. Click **Install Now**
 4. Click **Activate**
 
@@ -198,7 +198,7 @@ Upload timeouts and browser crashes
 
 ### First Use
 
-1. Navigate to **Media → Add From Server Reloaded**
+1. Navigate to **Media → Add From Server Lite**
 2. Browse your server files
 3. Select files or folders to import
 4. Click **Import Selected Files**
@@ -253,11 +253,11 @@ Upload timeouts and browser crashes
 
 ---
 
-## Why Choose Add From Server Reloaded?
+## Why Choose Add From Server Lite?
 
 ### vs. Editing php.ini
 
-| Feature | Editing php.ini | Add From Server Reloaded |
+| Feature | Editing php.ini | Add From Server Lite |
 |---------|----------------|--------------------------|
 | **Technical Knowledge** | Requires PHP knowledge | No technical knowledge needed |
 | **Server Access** | Requires root/server access | Works with FTP only |
@@ -267,7 +267,7 @@ Upload timeouts and browser crashes
 
 ### vs. The Original "Add From Server" Plugin
 
-| Feature | Original Plugin | Add From Server Reloaded |
+| Feature | Original Plugin | Add From Server Lite |
 |---------|----------------|--------------------------|
 | **Last Update** | 2020 (abandoned) | **2025 (active)** |
 | **WordPress Support** | Up to 5.5 only | **Up to 6.8** |

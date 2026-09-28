@@ -73,7 +73,7 @@ class Import_Cron {
 			$schedules['afsrreloaded_every_minute'] = array(
 				'interval' => MINUTE_IN_SECONDS,
 				// Untranslated: this filter can run before the init hook.
-				'display'  => 'Every Minute (Add From Server Reloaded)',
+				'display'  => 'Every Minute (Add From Server Lite)',
 			);
 		}
 

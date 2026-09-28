@@ -52,12 +52,12 @@
 	align-items: center;
 	gap: 4px;
 	font-size: 14px;
-	color: #1d2327;
+	color: #000;
 }
 
 .afsrreloaded-pro-import-summary__body p {
 	margin: 4px 0 0;
-	color: #50575e;
+	color: #000;
 	font-size: 13px;
 	line-height: 1.45;
 }
@@ -91,7 +91,7 @@
 
 .afsrreloaded-pro-settings-card p {
 	margin: 0 0 12px;
-	color: #50575e;
+	color: #000;
 	font-size: 14px;
 	line-height: 1.5;
 }
@@ -128,7 +128,7 @@
 
 .afsrreloaded-pro-features-hero__text p {
 	margin: 0;
-	color: #50575e;
+	color: #000;
 	font-size: 14px;
 	line-height: 1.55;
 }
@@ -173,7 +173,7 @@
 .afsrreloaded-pro-feature-card__lock {
 	flex: 0 0 auto;
 	margin-top: 2px;
-	color: #646970;
+	color: #000;
 }
 
 .afsrreloaded-pro-feature-card__text {
@@ -185,12 +185,12 @@
 }
 
 .afsrreloaded-pro-feature-card__text strong {
-	color: #1d2327;
+	color: #000;
 	font-size: 14px;
 }
 
 .afsrreloaded-pro-feature-card__text span {
-	color: #50575e;
+	color: #000;
 	font-size: 13px;
 	line-height: 1.45;
 }
@@ -241,11 +241,11 @@
 	border: 0;
 	background: transparent;
 	cursor: pointer;
-	color: #646970;
+	color: #000;
 }
 
 .afsrreloaded-pro-modal-close:hover {
-	color: #1d2327;
+	color: #000;
 }
 
 .afsrreloaded-pro-modal-icon .dashicons {
@@ -264,19 +264,19 @@
 	margin: 0 0 8px;
 	font-weight: 600;
 	font-size: 15px;
-	color: #1d2327;
+	color: #000;
 }
 
 .afsrreloaded-pro-modal-desc {
 	margin: 0 0 12px;
-	color: #50575e;
+	color: #000;
 	font-size: 14px;
 	line-height: 1.5;
 }
 
 .afsrreloaded-pro-modal-copy {
 	margin: 0 0 20px;
-	color: #646970;
+	color: #000;
 	font-size: 13px;
 	line-height: 1.5;
 }

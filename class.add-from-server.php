@@ -1,6 +1,6 @@
 <?php
 /**
- * Add From Server Reloaded - Main Plugin Class
+ * Add From Server Lite - Main Plugin Class
  *
  * @package   AFSRReloaded
  * @copyright Copyright (c) 2025, Very Good Plugins, https://verygoodplugins.com
@@ -11,6 +11,11 @@
 namespace AFSRReloaded;
 
 use WP_Error;
+
+// If this file is called directly, abort.
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 
 const COOKIE = 'afsrreloaded_path';
 
@@ -278,7 +283,7 @@ class Plugin {
 				'ajaxurl'         => \admin_url( 'admin-ajax.php' ),
 				'nonce'           => \wp_create_nonce( 'afsrreloaded_import' ),
 				'historyUrl'      => \admin_url( 'admin.php?page=add-from-server-reloaded-history' ),
-				'proUrl'          => 'https://elearningevolve.com/products/add-from-server-reloaded-pro/',
+				'proUrl'          => 'https://elearningevolve.com/products/add-from-server-pro/',
 				'chunkSize'       => (int) apply_filters( 'afsrreloaded_import_chunk_size', Import_Processor::DEFAULT_CHUNK_SIZE ),
 				'features'        => Features::js_flags(),
 				'processing'      => __( 'Processing...', 'add-from-server-reloaded' ),
@@ -325,7 +330,7 @@ class Plugin {
 			: __( 'AFS Lite', 'add-from-server-reloaded' );
 
 		$page_slug = \add_menu_page(
-			__( 'Add From Server Reloaded', 'add-from-server-reloaded' ),
+			__( 'Add From Server Lite', 'add-from-server-reloaded' ),
 			$menu_label,
 			$cap,
 			'add-from-server-reloaded',
@@ -382,7 +387,7 @@ class Plugin {
 	public function set_admin_page_title( $admin_title, $title ) {
 		$screen = \get_current_screen();
 		if ( $screen && 'add-from-server-reloaded' === $screen->id ) {
-			return \__( 'Add From Server Reloaded', 'add-from-server-reloaded' ) . $admin_title;
+			return \__( 'Add From Server Lite', 'add-from-server-reloaded' ) . $admin_title;
 		}
 		return $admin_title;
 	}
@@ -434,7 +439,7 @@ class Plugin {
 		// Set page title.
 		global $title;
 		// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- WordPress admin menu pages expect $title.
-		$title = \__( 'Add From Server Reloaded', 'add-from-server-reloaded' );
+		$title = \__( 'Add From Server Lite', 'add-from-server-reloaded' );
 
 		// Legacy non-JS fallback import (chunked AJAX is preferred when JS is available).
 		if ( isset( $_POST['import'] ) && ( ! empty( $_POST['files'] ) || ! empty( $_POST['folders'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified inside handle_imports().
@@ -442,7 +447,7 @@ class Plugin {
 		}
 
 		echo '<div class="wrap afsr-admin-wrap">';
-		echo '<h1>' . esc_html__( 'Add From Server Reloaded', 'add-from-server-reloaded' ) . '</h1>';
+		echo '<h1>' . esc_html__( 'Add From Server Lite', 'add-from-server-reloaded' ) . '</h1>';
 
 		$this->outdated_options_notice();
 		$this->main_content();

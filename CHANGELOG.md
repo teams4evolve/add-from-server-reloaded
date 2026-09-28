@@ -1,18 +1,17 @@
-# Add From Server Reloaded - Version History
+# Add From Server Lite - Version History
 
 ## Version 6.0.0
 
 Major free release (AFS Lite).
 
-- Freemium AFS Lite / AFS Pro experience with refreshed Import UI and Pro teasers
+- Major Upgrade: freemium AFS Lite / AFS Pro experience with refreshed Import UI and Pro teasers. Pro: https://elearningevolve.com/products/add-from-server-pro/
 - Chunked AJAX bulk import, folder scanning, and cancel support
 - Settings screen; Import Files and Settings links on the Plugins screen
-- Display name: Add From Server Reloaded (AFS Lite)
+- Display name: Add From Server Lite
 - Security: `afsrreloaded_check_duplicate` requires a real file under the configured root (Path_Guard). Thanks to comradezephyr for responsible disclosure.
 - Security: Skip content hashing for non-regular files and files over 64 MiB by default (`afsrreloaded_file_hash_max_bytes`) to limit md5_file DoS
 - Path and import security hardening
-- Pro-ready modules unlock with Add From Server Reloaded Pro (AFS Pro)
-- Tested up to WordPress 7.1
+- Pro-ready modules unlock with Add From Server Pro (AFS Pro)
 
 ## Version 5.0.0 - October 25, 2025
 
@@ -396,7 +395,7 @@ No configuration changes needed. No data loss. Safe to upgrade.
 
 ---
 
-**Thank you for using Add From Server Reloaded!** 🎉
+**Thank you for using Add From Server Lite!** 🎉
 
 This update represents months of development work to bring you the best file import experience possible. We hope you enjoy the new features and improvements!
 

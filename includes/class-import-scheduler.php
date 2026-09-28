@@ -90,15 +90,15 @@ class Import_Scheduler {
 		$custom = array(
 			'afsrreloaded_every_5_minutes'  => array(
 				'interval' => 5 * MINUTE_IN_SECONDS,
-				'display'  => 'Every 5 Minutes (Add From Server Reloaded)',
+				'display'  => 'Every 5 Minutes (Add From Server Lite)',
 			),
 			'afsrreloaded_every_15_minutes' => array(
 				'interval' => 15 * MINUTE_IN_SECONDS,
-				'display'  => 'Every 15 Minutes (Add From Server Reloaded)',
+				'display'  => 'Every 15 Minutes (Add From Server Lite)',
 			),
 			'afsrreloaded_every_30_minutes' => array(
 				'interval' => 30 * MINUTE_IN_SECONDS,
-				'display'  => 'Every 30 Minutes (Add From Server Reloaded)',
+				'display'  => 'Every 30 Minutes (Add From Server Lite)',
 			),
 		);
 

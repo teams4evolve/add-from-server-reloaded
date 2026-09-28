@@ -237,7 +237,7 @@ class Import_Ajax {
 
 		wp_send_json_error(
 			array(
-				'message' => __( 'This feature requires Add From Server Reloaded Pro with a valid license.', 'add-from-server-reloaded' ),
+				'message' => __( 'This feature requires Add From Server Pro with a valid license.', 'add-from-server-reloaded' ),
 				'code'    => 'pro_required',
 			),
 			403

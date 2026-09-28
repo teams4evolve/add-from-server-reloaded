@@ -1,8 +1,8 @@
 <?php
 /**
- * Plugin Name:       Add From Server Reloaded (AFS Lite)
+ * Plugin Name:       Add From Server Lite
  * Plugin URI:        https://wordpress.org/plugins/add-from-server-reloaded/
- * Description:       Bypass WordPress upload limit. Import large files from your server to Media Library with reliable chunked imports. Pair with Add From Server Reloaded Pro (AFS Pro) for background jobs and advanced queue tools.
+ * Description:       Bypass WordPress upload limit. Import large files from your server to Media Library with reliable chunked imports. Pair with Add From Server Pro (AFS Pro) for background jobs and advanced queue tools.
  * Version:           6.0.0
  * Author:            eLearning evolve
  * Author URI:        https://elearningevolve.com/about/
@@ -12,10 +12,10 @@
  * Requires PHP:      7.4
  * Domain Path:       /languages
  * Requires at least: 6.0
- * Tested up to:      7.1
+ * Tested up to:      7.1.2
  *
  * @since             4.0.0
- * @package           Add From Server Reloaded
+ * @package           Add From Server Lite
  */
 
 // If this file is called directly, abort.
