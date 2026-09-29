@@ -5,7 +5,7 @@ Tags: upload-limit, large-files, ftp, import, upload
 Requires at least: 6.0
 Tested up to: 7.1.2
 Requires PHP: 7.4
-Stable tag: 6.0.0
+Stable tag: 6.0.1
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -15,9 +15,9 @@ Import large files into the Media Library from your server. Skip browser upload 
 
 ## Stop fighting WordPress upload limits
 
-Hosting caps and PHP limits should not decide whether your video, RAW photo, or product image set makes it into WordPress. **Add From Server Lite (AFS Lite)** lets you place files on the server with FTP or SSH, then import them into the Media Library from wp-admin.
+Hosting caps and PHP upload limits should not decide whether your video, PDF, or product images make it into WordPress. **Add From Server Lite (AFS Lite)** lets you place files on the server with FTP or SSH, then import them into the Media Library from wp-admin.
 
-No php.ini edits. No host tickets. Works on shared hosting, multisite, and WooCommerce stores.
+No php.ini edits required. Free imports use chunked AJAX in the browser (keep the Import page open). Compatible with typical shared hosting for that flow, and with multisite as a normal per-site plugin (settings and Media Library stay on each site). Imports land in the Media Library, so you can use them on WooCommerce product images the usual way.
 
 Need help? [Contact eLearning evolve](https://elearningevolve.com/contact/).
 
@@ -35,18 +35,18 @@ That is the whole idea: put the files on disk first, then let WordPress register
 
 ### Built for real media libraries
 
-- **Folder import** — bring in a whole tree, including subfolders, in one pass.
-- **Chunked imports** — long jobs stay safer on shared hosts; cancel when you need to.
-- **Duplicate awareness** — reduce accidental re-imports of the same file.
-- **Search, filters, and pagination** — find what you need in large directories.
-- **Configurable root** — choose which area of the server the plugin may browse.
-- **Clear import summary** — jump straight to the new Media Library items.
+- **Folder import**: select a folder and import its files and subfolders (scanned in chunks).
+- **Chunked imports**: large jobs run in AJAX chunks while you keep the Import page open; cancel anytime.
+- **Duplicate awareness**: skips files that already look imported (hash/path checks). Pro adds skip/replace/rename and cleanup tools.
+- **Search, filters, and pagination**: find what you need in large directories.
+- **Configurable root**: choose which area of the server the plugin may browse (limited by PHP open_basedir).
+- **Import summary**: see how many files imported, were skipped as duplicates, or failed.
 
 ---
 
 ### A UI that stays out of your way
 
-Browse folders and files with checkboxes, breadcrumbs, and selection counts. Import actions sit at the top and bottom of the list so you are not scrolling forever on big directories. Keyboard shortcuts help when you are selecting a lot at once (Ctrl+A to select all, Esc to clear).
+Browse folders and files with checkboxes, a current-path display, and selection counts. Select-all controls sit at the top and bottom of the file list; Continue/Import stays in the wizard footer. Keyboard shortcuts: Ctrl+A (or Cmd+A) selects all visible files; Esc clears search.
 
 ---
 
@@ -55,7 +55,7 @@ Browse folders and files with checkboxes, breadcrumbs, and selection counts. Imp
 Importing from the server means path safety matters. AFS Lite is built with that in mind:
 
 - Files must sit under your configured root (path boundary checks).
-- Dangerous types such as PHP and executables are blocked by default.
+- Dangerous types such as PHP and executables are blocked by default. Types WordPress does not allow (including SVG unless you opt in under Settings) stay blocked too.
 - Forms and AJAX use WordPress nonces.
 - Paths are validated before browse or import.
 - Output is escaped; inputs are sanitized.
@@ -112,7 +112,7 @@ Upload the files to your server with FTP or SSH, then import them with AFS Lite.
 
 = Can I import large videos, PDFs, or RAW photos? =
 
-Yes. If the file fits on disk and WordPress supports the type, you can import it — including large video, PDF, and RAW files.
+Yes. If the file fits on disk and WordPress supports the type, you can import it, including large video and PDF files. RAW formats only work if WordPress (or another plugin) registers that type.
 
 = Can I bulk import WooCommerce product images? =
 
@@ -124,7 +124,7 @@ No. You need FTP or SSH access to place files on the server. You do not need roo
 
 = Is it safe on shared hosting? =
 
-Yes. No server config changes are required. The plugin blocks directory traversal and dangerous file types by default.
+Yes for the Free local import flow: no php.ini changes and no special PHP extensions. Imports are chunked over AJAX, so keep the Import page open until the job finishes. Very large single files or thumbnail generation can still hit host time limits. Browsable paths follow PHP open_basedir (often your WordPress or uploads folder only). Background imports that continue after you leave the page need Add From Server Pro.
 
 = What is the difference between AFS Lite and AFS Pro? =
 
@@ -143,9 +143,15 @@ Purchase from [eLearning evolve](https://elearningevolve.com/products/add-from-s
 1. Browse server files with the modern import interface.
 2. Real-time search filter in action.
 3. One-click folder import including subfolders.
-4. Import success message with Media Library links.
+4. Import complete screen with counts and Import more files.
 
 == Changelog ==
+
+= 6.0.1 =
+* UI: Settings is 2nd in the Lite sidebar; when Pro is active, Settings stays after Access Control.
+* UI: Muted/grey admin text set to black for clearer contrast.
+* UI: Pro Features copy cleanup.
+* Readme: tightened Description/FAQ wording to match what Free actually supports.
 
 = 6.0.0 =
 * Major Upgrade: freemium AFS Lite / AFS Pro experience, refreshed Import UI, and Pro feature teasers in the free plugin. Get [Add From Server Pro](https://elearningevolve.com/products/add-from-server-pro/).
@@ -190,6 +196,9 @@ Purchase from [eLearning evolve](https://elearningevolve.com/products/add-from-s
 * Initial Add From Server Lite release.
 
 == Upgrade Notice ==
+
+= 6.0.1 =
+UI polish for Lite sidebar order, clearer admin text, and Pro Features copy. Recommended update for all Free sites.
 
 = 6.0.0 =
 Major free update with the AFS Lite / AFS Pro freemium flow, chunked imports, Settings improvements, and security hardening. Update recommended for all sites.
